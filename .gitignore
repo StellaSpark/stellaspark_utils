@@ -1,6 +1,10 @@
 # keep all (empty) directories with a .gitkeep file
 !.gitkeep
 
+# Build distribution side-products
+MANIFEST
+nul
+
 backups/
 *.pyc
 

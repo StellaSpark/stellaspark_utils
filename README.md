@@ -56,7 +56,7 @@ isort .
 flake8
 ```
 
-Release to pypi.org
+Prepare release
 ```
 0. You need a Pypi account with an API token (https://pypi.org/manage/account/)
 1. Update version and change message in CHANGES.md
@@ -66,7 +66,18 @@ Release to pypi.org
 5. Add commit message "release <version>"
 6. Merge PR in main branch
 7. Checkout main branch and pull
+```
 
+Release automatically
+```
+cd <project_root>
+.\venv\Scripts\activate
+python release.py
+```
+
+
+Release manually
+```
 # Navigate to the project root directory
 cd <project_root>
 
@@ -80,11 +91,9 @@ python setup.py sdist
 twine check dist/*
 
 # Upload distribution to pypi.org
-twine upload dist/*
 twine upload dist/stellaspark_utils-<version>.tar.gz
 
-
 # You will be prompted for a username and password. 
-# - for the username, use __token__. 
-# - for the password, use the token value, including the pypi- prefix.
+# - for the username, use __token__ (yes literally '__token__')
+# - for the password, use the pypi token value, including the pypi- prefix
 ```

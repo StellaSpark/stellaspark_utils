@@ -1,6 +1,9 @@
 from os import path
+from release import ENV_STELLASPARK_UTILS_VERSION
 from setuptools import find_packages
 from setuptools import setup
+
+import os
 
 
 # read the contents of your README file
@@ -8,7 +11,8 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-version = "0.1"
+
+version = os.getenv(ENV_STELLASPARK_UTILS_VERSION)
 
 install_requires = ["pytz", "unidecode"]
 tests_require = [

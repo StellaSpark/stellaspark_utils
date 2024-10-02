@@ -1,4 +1,4 @@
-from nexus_utils.text import q
+from stellaspark_utils.text import q
 from typing import Dict
 from typing import List
 

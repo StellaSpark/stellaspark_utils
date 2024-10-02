@@ -16,8 +16,8 @@ tests_require = [
 ]
 
 setup(
-    name="nexus_utils",
-    packages=find_packages(include=["nexus_utils"]),
+    name="stellaspark_utils",
+    packages=find_packages(include=["stellaspark_utils"]),
     version=version,
     license="MIT",
     description="A collection of python utilities for StellaSpark Nexus Digital Twin",
@@ -27,9 +27,9 @@ setup(
     author_email="support@stellaspark.com",
     maintainer="StellaSpark",
     maintainer_email="support@stellaspark.com",
-    url="https://github.com/StellaSpark/nexus_utils",
-    download_url=f"https://github.com/StellaSpark/nexus_utils/archive/v{version}.tar.gz",
-    keywords=["nexus", "utils", "calculation", "python"],
+    url="https://github.com/StellaSpark/stellaspark_utils",
+    download_url=f"https://github.com/StellaSpark/stellaspark_utils/archive/v{version}.tar.gz",
+    keywords=["stellaspark", "nexus", "utils", "calculation", "python"],
     zip_safe=False,
     python_requires=">=3.7",
     install_requires=install_requires,

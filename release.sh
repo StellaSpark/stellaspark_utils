@@ -29,7 +29,7 @@ fi
 python setup.py sdist
 
 # Construct the distribution file path
-DIST_FILE="dist/nexus_utils-${VERSION}.tar.gz"
+DIST_FILE="dist/stellaspark_utils-${VERSION}.tar.gz"
 
 # Check if the distribution file exists
 if [ ! -f "$DIST_FILE" ]; then
@@ -37,7 +37,7 @@ if [ ! -f "$DIST_FILE" ]; then
     exit 1
 fi
 
-# Validate all distibutions in nexus_utils/dist
+# Validate all distibutions in stellaspark_utils/dist
 twine check dist/*
 
 # Upload to PyPI using twine

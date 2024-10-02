@@ -76,12 +76,12 @@ cd <project_root>
 # Create distribution (with a '.tar.gz' in it)
 python setup.py sdist
 
-# Validate all distibutions in nexus_utils/dist
+# Validate all distibutions in stellaspark_utils/dist
 twine check dist/*
 
 # Upload distribution to pypi.org
 twine upload dist/*
-twine upload dist/nexus_utils-<version>.tar.gz
+twine upload dist/stellaspark_utils-<version>.tar.gz
 
 
 # You will be prompted for a username and password. 

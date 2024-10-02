@@ -58,6 +58,7 @@ flake8
 
 Release to pypi.org
 ```
+0. You need a Pypi account with an API token (https://pypi.org/manage/account/)
 1. Update version and change message in CHANGES.md
 2. Update the 'vesion' number in setup.py
 3. Autoformat code (see above)
@@ -79,5 +80,11 @@ python setup.py sdist
 twine check dist/*
 
 # Upload distribution to pypi.org
-twine upload dist/
+twine upload dist/*
+twine upload dist/nexus_utils-<version>.tar.gz
+
+
+# You will be prompted for a username and password. 
+# - for the username, use __token__. 
+# - for the password, use the token value, including the pypi- prefix.
 ```

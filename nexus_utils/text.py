@@ -1,20 +1,12 @@
-# Standard Library imports
 from calendar import monthrange
 from datetime import datetime
 from datetime import timedelta
-
-# First Party imports
-from nexus_utils.generics import get_threadlogger
 from typing import List
 from typing import Union
 
-# Third Party imports
 import pytz
 import re
 import unidecode
-
-
-logger = get_threadlogger()
 
 
 def q(ids) -> Union[str, List]:

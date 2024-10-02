@@ -1,5 +1,3 @@
-# Standard Library imports
-# Local imports
 from nexus_utils.text import q
 from typing import Dict
 from typing import List

@@ -1,12 +1,7 @@
-from constants import ENV_PACKAGE_VERSION
-from constants import MODULE_NAMES
-from constants import PACKAGE_NAME
-from constants import REPO_NAME
 from os import path
+from release import read_release_version_from_txt_file
 from setuptools import find_packages
 from setuptools import setup
-
-import os
 
 
 # Read the contents of your README file
@@ -14,16 +9,24 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-version = os.getenv(ENV_PACKAGE_VERSION)
+
+def read_version_from_txt():
+    with open(path.join(this_directory, "version.txt"), encoding="utf-8") as file:
+        _version = file.readline().strip()
+    return _version
+
+
+version = read_release_version_from_txt_file()
 
 install_requires = ["pytz", "unidecode"]
 tests_require = [
     "pytest",
 ]
 
+
 setup(
-    name=PACKAGE_NAME,
-    packages=find_packages(include=MODULE_NAMES),
+    name="stellaspark-utils",
+    packages=find_packages(include=["stellaspark_utils"]),
     version=version,
     license="MIT",
     description="A collection of python utilities for StellaSpark Nexus Digital Twin",
@@ -34,7 +37,7 @@ setup(
     maintainer="StellaSpark",
     maintainer_email="support@stellaspark.com",
     url="https://github.com/StellaSpark/stellaspark_utils",
-    download_url=f"https://github.com/StellaSpark/{REPO_NAME}/archive/v{version}.tar.gz",
+    download_url=f"https://github.com/StellaSpark/stellaspark_utils/archive/v{version}.tar.gz",
     keywords=["stellaspark", "nexus", "utils", "calculation", "python"],
     zip_safe=False,
     python_requires=">=3.7",

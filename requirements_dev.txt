@@ -1,7 +1,5 @@
-black
-isort
-flake8
-pytest
-pytest-cov
-twine
-python-dotenv
+black           # autoformat code
+isort           # autoformat code
+flake8          # autoformat code
+twine           # required for releasing
+python-dotenv   # required for releasing

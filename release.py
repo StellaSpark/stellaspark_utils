@@ -1,19 +1,4 @@
-from constants import CHANGES_PATH
-from constants import DIST_DIR
-from constants import DOTENV_PATH
-from constants import EGG_INFO_DIR
-from constants import ENV_PACKAGE_VERSION
-from constants import ENV_PYPI_TOKEN
-from constants import MANIFEST_PATH
-from constants import MODULE_NAMES
-from constants import PACKAGE_NAME
-from constants import PROJECT_ROOT_DIR
-from constants import URL_PYPI
-from constants import URL_PYPI_RELEASES
-from constants import URL_PYPI_TOKEN
-from constants import VERSION_PATH
 from datetime import datetime
-from dotenv import load_dotenv
 from pathlib import Path
 from pprint import pprint
 
@@ -25,9 +10,34 @@ import sys
 import time
 
 
-load_dotenv()
-
 logger = logging.getLogger(__name__)
+
+# The PACKAGE_NAME will be normalized ('_' to '-'), see https://peps.python.org/pep-0503/#normalized-names
+# Results in (see https://stackoverflow.com/a/54599368):
+#   - distribution name for example: 'stellaspark-utils-0.2.tar.gz'         <- with dash
+#   - pypi url: https://pypi.org/project/stellaspark-utils/                 <- with dash
+#   - pip install command: 'pip install stellaspark-utils'                  <- with dash
+PACKAGE_NAME = "stellaspark-utils"
+
+# The MODULE_NAMES are underscore '_' because of python conventions
+# Results in:
+#   - '>>> import stellaspark_utils'                                        <- with underscore
+#   - '>>> from stellaspark_utils import db'                                <- with underscore
+MODULE_NAMES = ["stellaspark_utils"]
+REPO_NAME = "stellaspark_utils"
+
+
+ENV_PYPI_TOKEN = "PYPI_TOKEN"
+URL_PYPI = f"https://pypi.org/project/{PACKAGE_NAME}/"
+URL_PYPI_RELEASES = f"{URL_PYPI}#files"
+URL_PYPI_TOKEN = "https://pypi.org/help/#apitoken"
+PROJECT_ROOT_DIR = Path(".").resolve().absolute()
+CHANGES_PATH = PROJECT_ROOT_DIR / "CHANGES.rst"
+VERSION_PATH = PROJECT_ROOT_DIR / "version.txt"
+DOTENV_PATH = PROJECT_ROOT_DIR / ".env"
+MANIFEST_PATH = PROJECT_ROOT_DIR / "MANIFEST"
+EGG_INFO_DIR = PROJECT_ROOT_DIR / f"{REPO_NAME}.egg-info"
+DIST_DIR = PROJECT_ROOT_DIR / "dist"
 
 
 def get_distribution_path(_version: str) -> Path:
@@ -47,6 +57,12 @@ def setup_logging() -> None:
     root_logger.debug("setup logging done")
 
 
+def load_dotenv_only_when_called_from_here():
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+
 def get_pypi_token() -> str:
     logger.debug("Run get_pypi_token()")
     assert DOTENV_PATH.is_file(), f"{DOTENV_PATH} must exist"
@@ -57,7 +73,7 @@ def get_pypi_token() -> str:
     return _pypi_token
 
 
-def read_release_version() -> str:
+def read_release_version_from_txt_file() -> str:
     """Read and validate the version from version.txt."""
     logger.debug("Run get_version()")
 
@@ -93,25 +109,6 @@ def validate_version_is_in_changes(version: str) -> None:
         raise AssertionError(msg)
 
 
-def validate_modules() -> None:
-    logger.debug("Run validate_modules()")
-    modules_found = []
-    for _path in PROJECT_ROOT_DIR.iterdir():
-        try:
-            if _path.is_dir():
-                if "__init__.py" in [x.name for x in _path.iterdir()]:
-                    modules_found.append(_path.name)
-        except Exception as err:
-            if isinstance(err, OSError):
-                # This is caused by the 'nul' file that is created during the run. We cannot delete it automatically..
-                continue
-            logger.warning(err)
-    expected_modules_not_found = [x for x in MODULE_NAMES if x not in modules_found]
-    if expected_modules_not_found:
-        msg = f"Some setup.py packages do not exists {expected_modules_not_found}. Is constants.MODULE_NAMES correct?"
-        raise AssertionError(msg)
-
-
 def build_distribution(version: str, if_exists: str) -> None:
     logger.debug("Run build_distribution()")
     logger.info(f"Building distribution version '{version}'")
@@ -133,9 +130,6 @@ def build_distribution(version: str, if_exists: str) -> None:
         else:
             msg = f"Argument 'if_exists' '{if_exists}' in build_distribution() must be in ['remove', 'exit', 'raise']"
             raise NotImplementedError(msg)
-
-    # Set the version as an environment variable
-    os.environ[ENV_PACKAGE_VERSION] = version
 
     # Run the twine command to upload to PyPI
     command = ["python", "setup.py", "sdist"]
@@ -165,7 +159,7 @@ def release_to_pypi(version: str, pypi_token: str) -> None:
     file_path = distribution_path.as_posix()
     command = ["twine", "upload", file_path, "--username", "__token__", "--password", pypi_token, "--verbose"]
     try:
-        subprocess.run(command, check=True, capture_output=True)
+        subprocess.run(command, check=True, capture_output=True, text=True)
         logger.info(f"Successfully uploaded {distribution_path.as_posix()} to PyPI '{URL_PYPI}'")
     except subprocess.CalledProcessError as err:
         clean_files_and_dirs(delete_dist_files=False)
@@ -211,12 +205,20 @@ def clean_files_and_dirs(delete_dist_files: bool) -> None:
 
 
 if __name__ == "__main__":
+    try:
+        script_name = sys.argv[0]
+        if "release.py" not in script_name:
+            print("script_name is not 'release'")
+            sys.exit(0)
+    except IndexError:
+        print("no script_name found")
+        sys.exit(0)
+
     setup_logging()
+    load_dotenv_only_when_called_from_here()
     clean_files_and_dirs(delete_dist_files=True)
-    load_dotenv()
     pypi_token_found = get_pypi_token()
-    validate_modules()
-    version_found = read_release_version()
+    version_found = read_release_version_from_txt_file()
     validate_version_is_in_changes(version_found)
     build_distribution(version_found, if_exists="exit")
     release_to_pypi(version_found, pypi_token_found)

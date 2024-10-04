@@ -85,6 +85,8 @@ twine check dist/*
 
 # Upload distribution to pypi.org
 twine upload dist/stellaspark_utils-<version>.tar.gz
+or 
+twine upload dist/*
 
 # You will be prompted for a username and password. 
 # - for the username, use __token__ (yes literally '__token__')

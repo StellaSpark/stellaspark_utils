@@ -53,7 +53,7 @@ flake8
 
 ###### Prepare release
 1. Create a [Pypi account] and after registering, make sure your account has a pypi token
-2. Update version in version.txt
+2. Update version in stellaspark_utils/version.txt
 3. Update the CHANGES.rst with a change and release date of today
 4. Optionally, autoformat code (see above)
 5. Optionally, create a pull request in a branch "release <version>"

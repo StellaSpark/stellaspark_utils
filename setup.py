@@ -1,22 +1,19 @@
-from os import path
-from release import read_release_version_from_txt_file
+from pathlib import Path
 from setuptools import find_packages
 from setuptools import setup
 
 
 # Read the contents of your README file
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
+here = Path(".").resolve()
+readme_md_path = here / "README.md"
+version_txt_path = here / "stellaspark_utils" / "version.txt"
+assert readme_md_path.is_file() and version_txt_path.is_file()
+
+with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-
-def read_version_from_txt():
-    with open(path.join(this_directory, "version.txt"), encoding="utf-8") as file:
-        _version = file.readline().strip()
-    return _version
-
-
-version = read_release_version_from_txt_file()
+with open(version_txt_path.as_posix(), encoding="utf-8") as f:
+    version = f.readline().strip()
 
 install_requires = ["pytz", "unidecode"]
 tests_require = [

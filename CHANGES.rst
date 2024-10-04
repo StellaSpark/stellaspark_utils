@@ -1,5 +1,11 @@
-### 0.6 <small> Unreleased </small>
+### 0.8 <small> Unreleased </small>
  -
+
+### 0.7 <small> 2024-10-04 </small>
+ - Relocated version.txt inside package
+
+### 0.6 <small> 2024-10-04 </small>
+ - Let setup.py use its own read_version_from_txt()
 
 ### 0.5 <small> 2024-10-04 </small>
  - Let setup.py read version from version.txt, no environmental variables anymore

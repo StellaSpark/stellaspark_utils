@@ -4,16 +4,13 @@ from setuptools import setup
 
 
 # Read the contents of your README file
-here = Path(".").resolve()
-readme_md_path = here / "README.md"
-version_txt_path = here / "stellaspark_utils" / "version.txt"
-assert readme_md_path.is_file() and version_txt_path.is_file()
+readme_md_path = Path(".").resolve() / "README.md"
+
 
 with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-with open(version_txt_path.as_posix(), encoding="utf-8") as f:
-    version = f.readline().strip()
+version = "0.8"
 
 install_requires = ["pytz", "unidecode"]
 tests_require = [

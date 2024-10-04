@@ -1,4 +1,5 @@
-[Nexus Digital Twin]: https://www.stellaspark.com/
+[Nexus Digital Twin]:https://www.stellaspark.com/ 
+[Pypi account]:https://pypi.org/account/register/
 
 ### Description
 A collection of python utilities for StellaSpark [Nexus Digital Twin] technology.
@@ -9,10 +10,9 @@ A collection of python utilities for StellaSpark [Nexus Digital Twin] technology
 TODO
 ```
 
-
 ### Development
 
-Create an environment:
+###### Create an environment:
 ```
 # Install virtualenv if you didn't do that already
 pip install virtualenv
@@ -33,12 +33,7 @@ pip install -r requirements.txt
 pip install -r requirements_dev.txt   
 ```
 
-Run tests
-```
-TODO
-```
-
-Autoformat your code with:
+###### Autoformat your code with:
 ```
 # Navigate to the project root directory
 cd <project_root>
@@ -56,27 +51,25 @@ isort .
 flake8
 ```
 
-Prepare release
-```
-0. You need a Pypi account with an API token (https://pypi.org/manage/account/)
-1. Update version and change message in CHANGES.md
-2. Update the 'vesion' number in setup.py
-3. Autoformat code (see above)
-4. Create pull request in a branch "release <version>"
-5. Add commit message "release <version>"
-6. Merge PR in main branch
-7. Checkout main branch and pull
-```
+###### Prepare release
+1. Create a [Pypi account] and after registering, make sure your account has a pypi token
+2. Update version in version.txt
+3. Update the CHANGES.rst with a change and release date of today
+4. Optionally, autoformat code (see above)
+5. Optionally, create a pull request in a branch "release <version>"
+6. Optionally, Add commit message "release <version>"
+7. Optionally, Merge the pull request in main branch
+8. Optionally, Checkout main branch and pull
 
-Release automatically
+
+###### Release automatically
 ```
 cd <project_root>
 .\venv\Scripts\activate
 python release.py
 ```
 
-
-Release manually
+###### Release manually
 ```
 # Navigate to the project root directory
 cd <project_root>
@@ -95,5 +88,5 @@ twine upload dist/stellaspark_utils-<version>.tar.gz
 
 # You will be prompted for a username and password. 
 # - for the username, use __token__ (yes literally '__token__')
-# - for the password, use the pypi token value, including the pypi- prefix
+# - for the password, use the pypi token value, including the 'pypi-' prefix
 ```

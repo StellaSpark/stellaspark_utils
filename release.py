@@ -1,46 +1,37 @@
+from constants import CHANGES_PATH
+from constants import DIST_DIR
+from constants import DOTENV_PATH
+from constants import EGG_INFO_DIR
+from constants import ENV_PACKAGE_VERSION
+from constants import ENV_PYPI_TOKEN
+from constants import MANIFEST_PATH
+from constants import MODULE_NAMES
+from constants import PACKAGE_NAME
+from constants import PROJECT_ROOT_DIR
+from constants import URL_PYPI
+from constants import URL_PYPI_RELEASES
+from constants import URL_PYPI_TOKEN
+from constants import VERSION_PATH
 from datetime import datetime
-from distutils.command.sdist import sdist
-from distutils.dist import Distribution
+from dotenv import load_dotenv
 from pathlib import Path
+from pprint import pprint
 
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import time
 
 
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
 
-CHANGES_PATH = Path(".") / "CHANGES.md"
-ENV_STELLASPARK_UTILS_VERSION = "ENV_STELLASPARK_UTILS_VERSION"
-DOTENV_PATH = Path(".") / ".env"
-
-
-def load_dotenv():
-    """Loads environment variables from a .env file into the environment.
-
-    Why not use the 'from dotenv import load_dotenv'? That does not work in combination with build_distribution() below.
-    """
-    assert DOTENV_PATH.is_file(), f"{DOTENV_PATH} must exist"
-    with open(DOTENV_PATH.as_posix()) as f:
-        for line in f:
-            # Strip whitespace and skip comments or empty lines
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-
-            # Split the line into key, value pairs
-            if "=" in line:
-                key, value = line.split("=", 1)
-
-                # Strip whitespace from key and value
-                key = key.strip()
-                value = value.strip().strip('"').strip("'")  # Strip quotes around values if any
-
-                # Set the environment variable
-                os.environ[key] = value
+def get_distribution_path(_version: str) -> Path:
+    return DIST_DIR / f"{PACKAGE_NAME}-{_version}.tar.gz"
 
 
 def setup_logging() -> None:
@@ -57,21 +48,25 @@ def setup_logging() -> None:
 
 
 def get_pypi_token() -> str:
-    _pypi_token = os.getenv("PYPI_TOKEN")
-    assert _pypi_token, "'PYPI_TOKEN=<your_pypi_token>' not found in the stellaspark_utils/.env file"
-    assert _pypi_token.startswith("pypi-"), f"The pypi token should start with 'pypi-', but it is '{_pypi_token}'"
+    logger.debug("Run get_pypi_token()")
+    assert DOTENV_PATH.is_file(), f"{DOTENV_PATH} must exist"
+    _pypi_token = os.getenv(ENV_PYPI_TOKEN)
+    msg_token = f"To create a Pypi token see '{URL_PYPI_TOKEN}'"
+    assert _pypi_token, f"'{ENV_PYPI_TOKEN}=<your_pypi_token>' not found in '{DOTENV_PATH}'. {msg_token}"
+    assert _pypi_token.startswith("pypi-"), f"The pypi token '{_pypi_token} must start with 'pypi-'. . {msg_token}"
     return _pypi_token
 
 
-def get_version() -> str:
+def read_release_version() -> str:
     """Read and validate the version from version.txt."""
-    version_path = Path(".") / "version.txt"
-    assert version_path.is_file(), f"Version file '{version_path}' must exist"
-    with open(version_path.as_posix(), "r") as f:
+    logger.debug("Run get_version()")
+
+    assert VERSION_PATH.is_file(), f"Version file '{VERSION_PATH}' must exist"
+    with open(VERSION_PATH.as_posix(), "r") as f:
         _version = f.readline().strip()
 
     # Validate format
-    error_msg = f"Version '{_version}' in '{version_path}' is not valid. Expected format is x.y"
+    error_msg = f"Version '{_version}' in '{VERSION_PATH}' is not valid. Expected format is x.y"
     assert len(_version) == 3, error_msg
     for version_number in [_version[0], _version[2]]:
         try:
@@ -80,84 +75,151 @@ def get_version() -> str:
             raise ValueError(error_msg)
     assert _version[1] == ".", error_msg
 
-    logger.info(f"Successfully detected version '{_version}'")
+    logger.info(f"Detected version '{_version}' from '{VERSION_PATH}'")
     time.sleep(1)
 
     return _version
 
 
-def validate_version_is_in_changes(_version: str) -> None:
+def validate_version_is_in_changes(version: str) -> None:
+    logger.debug("Run validate_version_is_in_changes()")
     assert CHANGES_PATH.is_file(), f"CHANGES file '{CHANGES_PATH}' must exist"
     today = datetime.today()
-    expected_line = f"### {_version} <small> {today.strftime('%Y-%m-%d')} </small>"
+    expected_line = f"### {version} <small> {today.strftime('%Y-%m-%d')} </small>"
     with open(CHANGES_PATH.as_posix(), "r") as f:
         expected_line_in_changes = expected_line in f.read()
-    assert expected_line_in_changes, f"Line '{expected_line}' must be in '{CHANGES_PATH}'"
+    if not expected_line_in_changes:
+        msg = f"Releasing version '{version}' today, so line '{expected_line}' must be in '{CHANGES_PATH}'"
+        raise AssertionError(msg)
 
 
-def build_distribution(_distribution_path: Path, _version: str, remove_if_exists: bool = True) -> None:
-    logger.info(f"Building distribution {_version} to Pypi")
+def validate_modules() -> None:
+    logger.debug("Run validate_modules()")
+    modules_found = []
+    for _path in PROJECT_ROOT_DIR.iterdir():
+        try:
+            if _path.is_dir():
+                if "__init__.py" in [x.name for x in _path.iterdir()]:
+                    modules_found.append(_path.name)
+        except Exception as err:
+            if isinstance(err, OSError):
+                # This is caused by the 'nul' file that is created during the run. We cannot delete it automatically..
+                continue
+            logger.warning(err)
+    expected_modules_not_found = [x for x in MODULE_NAMES if x not in modules_found]
+    if expected_modules_not_found:
+        msg = f"Some setup.py packages do not exists {expected_modules_not_found}. Is constants.MODULE_NAMES correct?"
+        raise AssertionError(msg)
 
-    if _distribution_path.is_file():
-        msg = f"Distribution {_distribution_path} already exists."
-        if remove_if_exists:
-            logger.warning(f"{msg} Deleting it now...")
-            os.remove(_distribution_path.as_posix())
+
+def build_distribution(version: str, if_exists: str) -> None:
+    logger.debug("Run build_distribution()")
+    logger.info(f"Building distribution version '{version}'")
+
+    assert if_exists in ["remove", "exit", "raise"]
+    distribution_path = get_distribution_path(version)
+    if distribution_path.exists():
+        msg = f"Distribution {distribution_path} already exists"
+        if if_exists == "raise":
+            raise AssertionError(f"{msg}. Please delete manually and try again")
+        elif if_exists == "remove":
+            logger.warning(f"{msg}. We will delete it now, and then continue")
+            time.sleep(2)
+            os.remove(distribution_path.as_posix())
+        elif if_exists == "exit":
+            clean_files_and_dirs(delete_dist_files=False)
+            logger.warning(f"{msg}. Exiting now")
+            sys.exit(1)
         else:
-            raise AssertionError(msg)
+            msg = f"Argument 'if_exists' '{if_exists}' in build_distribution() must be in ['remove', 'exit', 'raise']"
+            raise NotImplementedError(msg)
 
     # Set the version as an environment variable
-    os.environ[ENV_STELLASPARK_UTILS_VERSION] = _version
-
-    # Create a Distribution object
-    dist = Distribution(attrs={"version": _version})
-
-    # Set the distribution command to 'sdist'
-    dist.script_name = "setup.py"
-    dist.script_args = ["sdist"]
-
-    # Run the 'sdist' command
-    try:
-        cmd = sdist(dist)
-        cmd.ensure_finalized()
-        cmd.run()
-        logger.info(f"Successfully build {_distribution_path.as_posix()}")
-    except Exception as err:
-        logger.error(f"Failed to build {_distribution_path.as_posix()}, err={err}")
-        sys.exit(1)
+    os.environ[ENV_PACKAGE_VERSION] = version
 
     # Run the twine command to upload to PyPI
     command = ["python", "setup.py", "sdist"]
     try:
         subprocess.run(command, check=True)
-        logger.info(f"Successfully build {_distribution_path.as_posix()}")
+        logger.info(f"Successfully build {distribution_path.as_posix()}")
     except subprocess.CalledProcessError as err:
-        logger.error(f"Failed to build {_distribution_path.as_posix()}, err={err.output}")
+        clean_files_and_dirs(delete_dist_files=False)
+        logger.error(f"Exiting now as we failed to build {distribution_path.as_posix()}, err={err.output}")
         sys.exit(1)
 
-    assert _distribution_path.is_file(), f"Distribution was build, but there is no file '{_distribution_path}'"
+    # Ensure that the distribution (the tar.gz file) was created
+    if distribution_path.is_file():
+        return
+    dists_found = [x.as_posix() for x in DIST_DIR.iterdir()]
+    msg = f"Distribution was build, but there is no file '{distribution_path}'. Distribution files found {dists_found}"
+    raise AssertionError(msg)
 
 
-def release_to_pypi(_distribution_path: Path, _version: str) -> None:
-    logger.info(f"Releasing stellaspark_utils {_version} to Pypi")
+def release_to_pypi(version: str, pypi_token: str) -> None:
+    logger.debug("Run release_to_pypi()")
+    logger.info(f"Releasing {PACKAGE_NAME} {version} to Pypi '{URL_PYPI}'")
+
+    distribution_path = get_distribution_path(version)
+
     # Run the twine command to upload to PyPI
-    command = ["twine", "upload", _distribution_path.as_posix(), "--username", "__token__", "--password", pypi_token]
+    file_path = distribution_path.as_posix()
+    command = ["twine", "upload", file_path, "--username", "__token__", "--password", pypi_token, "--verbose"]
     try:
-        subprocess.run(command, check=True)
-        logger.info(f"Successfully uploaded {_distribution_path.as_posix()} to PyPI.")
+        subprocess.run(command, check=True, capture_output=True)
+        logger.info(f"Successfully uploaded {distribution_path.as_posix()} to PyPI '{URL_PYPI}'")
     except subprocess.CalledProcessError as err:
-        logger.info(f"Error: Failed to upload {_distribution_path.as_posix()}, err={err}")
+        clean_files_and_dirs(delete_dist_files=False)
+        pypi_response = str(err.output).lower()
+        print("\n")
+        print("-------------------------------------- Start pypi response -----------------------------------------")
+        pprint(pypi_response)
+        print("--------------------------------------- End pypi response ------------------------------------------")
+        print("\n")
+        if "file already exists" in pypi_response:
+            msg = f"release to pypi failed as version '{version}' already exists on pypi '{URL_PYPI_RELEASES}'"
+        else:
+            msg = f"release to pypi failed, err={err}"
+        logger.error(f"Exiting now as {msg}")
         sys.exit(1)
+
+
+def clean_files_and_dirs(delete_dist_files: bool) -> None:
+    logger.debug("Run clean_files_and_dirs()")
+
+    dirs_to_remove = [EGG_INFO_DIR]
+    files_to_remove = [MANIFEST_PATH]
+    if delete_dist_files and DIST_DIR.is_dir():
+        files_to_remove.extend([x for x in DIST_DIR.iterdir()])
+
+    # Delete directories
+    for dir_path in dirs_to_remove:
+        try:
+            if dir_path.is_dir():
+                logger.debug(f"Deleting dir {dir_path}")
+                shutil.rmtree(dir_path.as_posix())
+        except Exception as err:
+            logger.warning(f"Could not delete dir {dir_path}, err={err}")
+
+    # Delete files
+    for file_path in files_to_remove:
+        try:
+            if file_path.is_file():
+                logger.debug(f"Deleting file {file_path}")
+                os.remove(file_path.as_posix())
+        except Exception as err:
+            logger.warning(f"Could not delete file {file_path}, err={err}")
 
 
 if __name__ == "__main__":
     setup_logging()
+    clean_files_and_dirs(delete_dist_files=True)
     load_dotenv()
-    pypi_token = get_pypi_token()
-    version_found = get_version()
+    pypi_token_found = get_pypi_token()
+    validate_modules()
+    version_found = read_release_version()
     validate_version_is_in_changes(version_found)
+    build_distribution(version_found, if_exists="exit")
+    release_to_pypi(version_found, pypi_token_found)
+    clean_files_and_dirs(delete_dist_files=False)
 
-    distribution_path = Path(".") / "dist" / f"stellaspark_utils-{version_found}.tar.gz"
-
-    build_distribution(distribution_path, version_found)
-    release_to_pypi(distribution_path, version_found)
+    logger.info("Shutting down")

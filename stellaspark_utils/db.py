@@ -1,6 +1,14 @@
+from stellaspark_utils.generics import make_identifier
 from stellaspark_utils.text import q
 from typing import Dict
 from typing import List
+from typing import Union
+
+import logging
+import sqlalchemy
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_indexes(executor, schema: str, table: str, pk: bool = True, unique: bool = True) -> List[Dict]:
@@ -31,6 +39,73 @@ def get_indexes(executor, schema: str, table: str, pk: bool = True, unique: bool
         indexes = [dict(row) for row in results.fetchall()]
 
     return indexes
+
+
+def create_index(
+    engine,
+    schema: str,
+    table: str,
+    col: Union[str, List],
+    method: str = "auto",
+    srid: int = None,
+    max_maintenance_work_mem: int = None,
+) -> None:
+    """Create (spatial or non-spatial) indexes on a set of columns in table.
+
+    Argument 'col' may be a str, list of str or list of lists
+    """
+    assert method in ("auto", "gist"), "Only 'auto' and 'gist' are currently supported as indexing method"
+
+    cols = [col] if isinstance(col, str) else col  # Ensure that cols is a list
+    indexes_existing = [index["name"] for index in get_indexes(engine, schema, table, pk=False)]
+    index_created = False
+
+    # Process column-wise
+    for col_in in cols:
+        if isinstance(col_in, str):
+            # Single column index
+            col_in = [col_in]
+        else:
+            # Multicolumn index
+            assert method == "auto", "Multicolumn index with GiST is not supported"
+
+        if srid:
+            index_name = make_identifier(f"{table}_{'_'.join(col_in)}_{srid}_idx")
+        else:
+            index_name = make_identifier(f"{table}_{'_'.join(col_in)}_idx")
+
+        if index_name in indexes_existing:
+            logger.info(f"Skip creating index '{index_name}' as it already exists")
+        else:
+            if max_maintenance_work_mem:
+                assert isinstance(max_maintenance_work_mem, int) and max_maintenance_work_mem > 0
+                # Increase working memory to speed up process. Add the end of this function we reset it to original
+                engine.execute(f"set maintenance_work_mem = '{max_maintenance_work_mem}'")
+            try:
+                logger.info(f"Add index to {schema}.{table} for column(s) {','.join(col_in)}")
+                if method == "auto":
+                    engine.execute(f"create index {q(index_name)} on {schema}.{q(table)}({','.join(q(col_in))})")
+                elif method == "gist":
+                    sql_col_in = f"st_transform({q(col_in[0])}, {srid})" if srid else q(col_in[0])
+                    engine.execute(f"create index {q(index_name)} on {schema}.{q(table)} using gist ({sql_col_in})")
+                index_created = True
+            except sqlalchemy.exc.OperationalError:
+                logger.warning(
+                    f"Unable to create index, some values in column {','.join(q(col_in))} are too long. "
+                    f"Proceeding without index."
+                )
+                index_created = False
+
+    if index_created:
+        # Vacuum table to update query planner
+        connection = engine.raw_connection()
+        old_isolation_level = connection.isolation_level
+        connection.set_isolation_level(0)
+        cursor = connection.cursor()
+        cursor.execute(f"vacuum analyze {schema}.{q(table)}")
+        connection.set_isolation_level(old_isolation_level)
+
+    engine.execute("reset maintenance_work_mem")
 
 
 def get_constraints(executor, schema: str, table: str, pk: bool = True, child_fks: bool = False) -> List[Dict]:

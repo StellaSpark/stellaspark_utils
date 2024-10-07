@@ -1,93 +1,50 @@
 [Nexus Digital Twin]:https://www.stellaspark.com/ 
 [Pypi account]:https://pypi.org/account/register/
 
+
 ### Description
 A collection of python utilities for StellaSpark [Nexus Digital Twin] technology.
 
 
 ### Usage
 ```
-TODO
+from stellaspark_utils.db import get_indexes
+from stellaspark_utils.text import parse_time_placeholders
 ```
 
 ### Development
 
 ###### Create an environment:
 ```
-# Install virtualenv if you didn't do that already
-pip install virtualenv
-
-# Navigate to the project root directory
 cd <project_root>
-
-# Create your new environment (called 'venv' here)
-virtualenv venv
-
-# Enter the virtual environment
-.\venv\Scripts\activate
-       
-# Install the requirements in the current environment
-pip install -r requirements.txt
-
-# Install the development requirements in the current environment
-pip install -r requirements_dev.txt   
+set PIPENV_VENV_IN_PROJECT=1 && pipenv --python 3.7.9    # Create a .venv folder in current dir so it's easy to use/maintain by your idea
+pipenv shell
+pip install -r requirements.txt 
+pip install -r requirements_dev.txt
 ```
 
-###### Autoformat your code with:
+###### Autoformat code:
 ```
-# Navigate to the project root directory
 cd <project_root>
-
-# Enter the virtual environment
-.\venv\Scripts\activate
-
-# Make the code look nice              
-black .
-
-# Sort the import statements
-isort .
-
-# Validate the code syntax
-flake8
+pipenv shell
+black .     # Make the code look nice
+isort .     # Sort the import statements
+flake8      # Validate the code syntax
 ```
 
 ###### Prepare release
 1. Create a [Pypi account] and after registering, make sure your account has a pypi token
-2. Update version in stellaspark_utils/version.txt
-3. Update the CHANGES.rst with a change and release date of today
+2. Update version in stellaspark_utils/setup.py
+3. Update the CHANGES.rst with a change message and release date of today
 4. Optionally, autoformat code (see above)
-5. Optionally, create a pull request in a branch "release <version>"
-6. Optionally, Add commit message "release <version>"
-7. Optionally, Merge the pull request in main branch
-8. Optionally, Checkout main branch and pull
-
-
-###### Release automatically
-```
-cd <project_root>
-.\venv\Scripts\activate
-python release.py
-```
 
 ###### Release manually
 ```
-# Navigate to the project root directory
 cd <project_root>
-
-# Enter the virtual environment
-.\venv\Scripts\activate
-
-# Create distribution (with a '.tar.gz' in it)
-python setup.py sdist
-
-# Validate all distibutions in stellaspark_utils/dist
-twine check dist/*
-
-# Upload distribution to pypi.org
-twine upload dist/stellaspark_utils-<version>.tar.gz
-or 
-twine upload dist/*
-
+pipenv shell                                            # Activate pipenv environnment (see 'Create an environment' above)
+python setup.py sdist                                   # Create distribution (with a '.tar.gz' in it)
+twine check dist/*                                      # Validate all distibutions in stellaspark_utils/dist
+twine upload dist/stellaspark_utils-<version>.tar.gz    # Upload distribution to pypi.org
 # You will be prompted for a username and password. 
 # - for the username, use __token__ (yes literally '__token__')
 # - for the password, use the pypi token value, including the 'pypi-' prefix

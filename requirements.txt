@@ -1,2 +1,3 @@
 pytz
-unidecode==1.1.1
+unidecode   # 1.1.1
+sqlalchemy  # 1.4.25

@@ -1,7 +1,10 @@
-### 0.9 <small> Unreleased </small>
+### 1.0 <small> Unreleased </small>
  -
 
-### 0.8 <small> 2024-10-0 </small>
+### 0.9 <small> 2024-10-07 </small>
+ - Add functions db.create_index(), generics.make_identifier()
+
+### 0.8 <small> 2024-10-04 </small>
  - Fall back to manual release (subprocess makes corrupt dist)
 
 ### 0.7 <small> 2024-10-04 </small>

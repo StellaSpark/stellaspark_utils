@@ -10,6 +10,7 @@ A collection of python utilities for StellaSpark [Nexus Digital Twin] technology
 ```
 from stellaspark_utils.db import get_indexes
 from stellaspark_utils.text import parse_time_placeholders
+from stellaspark_tuils.generics import make_identifier
 ```
 
 ### Development
@@ -37,6 +38,7 @@ flake8      # Validate the code syntax
 2. Update version in stellaspark_utils/setup.py
 3. Update the CHANGES.rst with a change message and release date of today
 4. Optionally, autoformat code (see above)
+5. Push changes to GitHub (preferably in a branch 'release_<x>_<y>')
 
 ###### Release manually
 ```
@@ -44,7 +46,7 @@ cd <project_root>
 pipenv shell                                            # Activate pipenv environnment (see 'Create an environment' above)
 python setup.py sdist                                   # Create distribution (with a '.tar.gz' in it)
 twine check dist/*                                      # Validate all distibutions in stellaspark_utils/dist
-twine upload dist/stellaspark_utils-<version>.tar.gz    # Upload distribution to pypi.org
+twine upload dist/*                                     # Upload distribution to pypi.org
 # You will be prompted for a username and password. 
 # - for the username, use __token__ (yes literally '__token__')
 # - for the password, use the pypi token value, including the 'pypi-' prefix

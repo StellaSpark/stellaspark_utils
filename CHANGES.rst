@@ -1,5 +1,7 @@
-### 1.0 <small> Unreleased </small>
- -
+### 1.1 <small> Unreleased </small>
+
+### 1.0 <small> 2024-10-07 </small>
+ - Add db.DatabaseManager()
 
 ### 0.9 <small> 2024-10-07 </small>
  - Add functions db.create_index(), generics.make_identifier()

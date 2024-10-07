@@ -26,7 +26,7 @@ def sq(string: Union[str, List]):
     )
 
 
-def to_lwu(s, keep_colons=True, keep_minus=False, keep_double_underscores=False):
+def to_lwu(string, keep_colons=True, keep_minus=False, keep_double_underscores=False):
     """Convert string to lowercase_with_underscores format.
 
     Also replace dots and hyphens with underscores for Postgres table name compatibility. Maintaining or removing
@@ -81,19 +81,19 @@ def to_lwu(s, keep_colons=True, keep_minus=False, keep_double_underscores=False)
         to_remove.append(":")
 
     for substr, replacement in to_replace.items():
-        s = s.replace(substr, replacement)
+        string = string.replace(substr, replacement)
 
     for substr in to_underscore:
-        s = s.replace(substr, "_")
+        string = string.replace(substr, "_")
 
     for substr in to_remove:
-        s = s.replace(substr, "")
+        string = string.replace(substr, "")
 
     # Ensure that final string does not have _ at the end or start
-    s = s.strip("_")
-    s = unidecode.unidecode(s)  # Remove any accents, convert greek, cyrillic or chinese characters
+    string = string.strip("_")
+    string = unidecode.unidecode(string)  # Remove any accents, convert greek, cyrillic or chinese characters
 
-    return s.lower()
+    return string.lower()
 
 
 def is_float(string: str) -> bool:
@@ -105,7 +105,7 @@ def is_float(string: str) -> bool:
         return False
 
 
-def parse_time_placeholders(s: str):
+def parse_time_placeholders(string: str) -> str:
     """Substitute time placeholders.
 
     Substitute the following placeholders with current year, month and days respectively (possibly with a subtraction):
@@ -116,11 +116,11 @@ def parse_time_placeholders(s: str):
     https://www.programiz.com/python-programming/datetime/strftime
     """
     # Find fields that contain placeholders with percent signs (datetime-like)
-    fields = re.findall(r"{([-|%|\d].+?)}", s)
+    fields = re.findall(r"{([-|%|\d].+?)}", string)
     contains_any = ("%",)
     fields = [field for field in fields if any(substr in field for substr in contains_any)]
     if not fields:
-        return s
+        return string
 
     now = datetime.now()
     for field in fields:
@@ -143,16 +143,16 @@ def parse_time_placeholders(s: str):
             timestamp = now + timedelta(days=days, seconds=seconds)
             pos = field.find(":")
             if field[pos + 1 :] == "%unix":  # noqa
-                s = s.replace("{" + field + "}", str(int(timestamp.timestamp())))
+                string = string.replace("{" + field + "}", str(int(timestamp.timestamp())))
             else:
-                s = s.replace("{" + field + "}", eval(f"{timestamp: f'{field[pos+1:]}'}"))
+                string = string.replace("{" + field + "}", eval(f"{timestamp: f'{field[pos + 1:]}'}"))
         else:
             if field == "%unix":
-                s = s.replace("{" + field + "}", str(int(now.timestamp())))
+                string = string.replace("{" + field + "}", str(int(now.timestamp())))
             else:
-                s = s.replace("{" + field + "}", eval(f"{now: f'{field}'}"))
+                string = string.replace("{" + field + "}", eval(f"{now: f'{field}'}"))
 
-    return s
+    return string
 
 
 def get_days_offset(
@@ -191,11 +191,11 @@ def get_days_offset(
     return days
 
 
-def ensure_tz_aware(datetime_str: str) -> str:
+def ensure_tz_aware(datetime_string: str) -> str:
     """Ensure that datetime string is iso-formatted and is timezone aware."""
-    datetime_obj = datetime.fromisoformat(datetime_str)
+    datetime_obj = datetime.fromisoformat(datetime_string)
     is_tz_aware = datetime_obj.tzinfo is not None and datetime_obj.tzinfo.utcoffset(datetime_obj) is not None
     if is_tz_aware:
-        return datetime_str
+        return datetime_string
     datetime_obj_tz = datetime_obj.replace(tzinfo=pytz.utc)  # Make timezone aware (UTC)
     return datetime_obj_tz.isoformat()

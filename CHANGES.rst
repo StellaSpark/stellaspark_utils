@@ -1,4 +1,7 @@
+### 1.2 <small> Unreleased </small>
+
 ### 1.1 <small> Unreleased </small>
+ - Add text.extract_sql_columns()
 
 ### 1.0 <small> 2024-10-07 </small>
  - Add db.DatabaseManager()

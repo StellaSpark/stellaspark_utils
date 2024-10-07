@@ -105,6 +105,17 @@ def is_float(string: str) -> bool:
         return False
 
 
+def extract_sql_columns(sql_string) -> List[str]:
+    """Extract column names from an SQL 'where' statement."""
+    split_by = " and | or | in | not between | between | order by | asc | desc | is null| is not null|!=|<=|>=|<>|>|<|="
+    elems = re.split(split_by, sql_string.lower())
+    elems = [elem.strip() for elem in elems]
+
+    # Not a column if it is a number, a single-quoted item, or an expression with spaces (such as 'limit 1')
+    cols = [elem for elem in elems if (not bool(re.search("[' ()]", elem)) and (not is_float(elem)) and elem)]
+    return cols
+
+
 def parse_time_placeholders(string: str) -> str:
     """Substitute time placeholders.
 

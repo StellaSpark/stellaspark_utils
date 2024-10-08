@@ -1,5 +1,8 @@
-### 1.3 <small> Unreleased </small>
+### 1.4 <small> Unreleased </small>
  -
+
+### 1.3 <small> Unreleased </small>
+ - Improve validation of DatabaseManager argument 'db_settings'
 
 ### 1.2 <small> 2024-10-08 </small>
  - Move generics.make_identifier() to module db.make_identifier()

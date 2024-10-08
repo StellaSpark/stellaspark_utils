@@ -373,10 +373,14 @@ class DatabaseManager:
     def _set_db_url(db_url: str = None, db_settings: Dict = None) -> str:
         assert bool(db_url) != bool(db_settings), "Use either argument 'db_url' or 'db_settings"
         if db_settings:
+            db = db_settings
+            keys_expected = sorted(["USER", "PASSWORD", "HOST", "PORT", "NAME"])
             try:
-                db_url = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{DATABASE['NAME']}"  # noqa
+                db_url = f"postgresql://{db['USER']}:{db['PASSWORD']}@{db['HOST']}:{db['PORT']}/{db['NAME']}"
             except KeyError as err:
-                msg = f"Argument 'db_settings' must have keys: 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'. err={err}"
+                keys_found = sorted(db.keys())
+                missing_keys = [x for x in keys_expected if x not in keys_found]
+                msg = f"Argument 'db_settings' misses key(s): {missing_keys}. Keys found: {keys_found}. err={err}"
                 raise KeyError(msg)
 
         # Validate db_url

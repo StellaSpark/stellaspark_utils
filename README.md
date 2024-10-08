@@ -17,7 +17,7 @@ from stellaspark_utils.text import parse_time_placeholders
 ###### Create an environment:
 ```
 cd <project_root>
-set PIPENV_VENV_IN_PROJECT=1 && pipenv --python 3.7.9    # Create a .venv folder in current dir so it's easy to use/maintain by your idea
+set PIPENV_VENV_IN_PROJECT=1 && pipenv --python 3.7   # Create a .venv folder in current dir so it's easy to use/maintain by your idea
 pipenv shell
 pip install -r requirements.txt 
 pip install -r requirements_dev.txt

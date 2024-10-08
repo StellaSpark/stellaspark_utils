@@ -8,9 +8,8 @@ A collection of python utilities for StellaSpark [Nexus Digital Twin] technology
 
 ### Usage
 ```
-from stellaspark_utils.db import get_indexes
+from stellaspark_utils.db import get_indexes, DatabaseManager
 from stellaspark_utils.text import parse_time_placeholders
-from stellaspark_tuils.generics import make_identifier
 ```
 
 ### Development

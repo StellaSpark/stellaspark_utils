@@ -340,11 +340,11 @@ class DatabaseManager:
 
     Example 1 instance with db_url
     >>> db_url = "postgres://<user>:<password>@<host>:<port>/<name>"
-    >>> db_manager = DatabaseManager(db_url, max_mb_mem_per_db_worker=64, engine_pool_size=2)
+    >>> db_manager = DatabaseManager(db_url=db_url, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
     Example 2 instance with db_settings
     >>> db_settings = {"USER":"<user>", "PASSWORD":"<password>", "HOST":"<host>", "PORT":"<port>", "NAME":"<name>"}
-    >>> db_manager = DatabaseManager(db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
+    >>> db_manager = DatabaseManager(db_settings=db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
     Example 3: limit postgresql transaction by working memory (as it uses 'get_connection()')
     >>> with db_manager.get_connection as conn:

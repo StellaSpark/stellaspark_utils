@@ -1,7 +1,10 @@
-### 1.4 <small> Unreleased </small>
+### 1.5 <small> Unreleased </small>
  -
 
-### 1.3 <small> Unreleased </small>
+### 1.4 <small> 2024-10-08 </small>
+ - Fix 'MB' issue in db.DatabaseManager.get_connection()
+
+### 1.3 <small> 2024-10-08 </small>
  - Improve validation of DatabaseManager argument 'db_settings'
 
 ### 1.2 <small> 2024-10-08 </small>

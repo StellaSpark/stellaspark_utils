@@ -347,7 +347,7 @@ class DatabaseManager:
     >>> db_manager = DatabaseManager(db_settings=db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
     Example 3: limit postgresql transaction by working memory (as it uses 'get_connection()')
-    >>> with db_manager.get_connection as conn:
+    >>> with db_manager.get_connection() as conn:
     >>>     result = conn.execute("<sql_query>").all()
 
     Example 4: run postgresql transactions not limited by working memory
@@ -404,11 +404,15 @@ class DatabaseManager:
     def get_connection(self):
         """Set the local work memory only once (DRY code).
 
+        Limit the sql transaction by working memory:
+        >>> with db_manager.get_connection() as conn:
+        >>>     result = conn.execute("<sql_query>").all()
+
         The @contextmanager decorator is used to simplify the creation of context managers, which handle setup and
         teardown operations (like opening and closing a database connection) around a block of code. It transforms a
         generator function into a context manager that can be used in a with statement. Without it, you would need
         to manually manage the setup and teardown using a custom class or additional boilerplate code.
         """
         with self.engine.begin() as conn:
-            conn.execute(f"set local work_mem = '{self._max_mb_mem_per_db_worker}mb'")
+            conn.execute(f"set local work_mem = '{self._max_mb_mem_per_db_worker}MB'")
             yield conn

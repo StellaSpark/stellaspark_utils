@@ -1,6 +1,11 @@
-### 1.2 <small> Unreleased </small>
+### 1.3 <small> Unreleased </small>
+ -
 
-### 1.1 <small> Unreleased </small>
+### 1.2 <small> 2024-10-08 </small>
+ - Move generics.make_identifier() to module db.make_identifier()
+ - Enable argument 'db_settings' on db.DatabaseManager()
+
+### 1.1 <small> 2024-10-07 </small>
  - Add text.extract_sql_columns()
 
 ### 1.0 <small> 2024-10-07 </small>
@@ -13,7 +18,7 @@
  - Fall back to manual release (subprocess makes corrupt dist)
 
 ### 0.7 <small> 2024-10-04 </small>
- - Relocated version.txt inside package
+ - Relocate version.txt to inside the package
 
 ### 0.6 <small> 2024-10-04 </small>
  - Let setup.py use its own read_version_from_txt()

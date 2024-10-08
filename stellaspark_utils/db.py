@@ -1,11 +1,11 @@
 # Standard Library imports
 from contextlib import contextmanager
-from stellaspark_utils.generics import make_identifier
 from stellaspark_utils.text import q
 from typing import Dict
 from typing import List
 from typing import Union
 
+import hashlib
 import logging
 import sqlalchemy
 
@@ -108,6 +108,28 @@ def create_index(
         connection.set_isolation_level(old_isolation_level)
 
     engine.execute("reset maintenance_work_mem")
+
+
+def make_identifier(string: str) -> str:
+    """Make a PG-compatible identifier (table names, column names, constraint names, etc.).
+
+    - Ensure that any double-quotes are removed from the candidate-name
+    - Identifiers are limited to a maximum length of 63 bytes. In case we have an identifier that is longer than
+      allowed length, limit the length in a smart way; e.g. by maintaining the last part while creating a hash for the
+      first part.
+    """
+    PG_COLNAME_LIMIT = 63
+
+    string = str(string)  # Convert ints etc.
+    string = string.replace('"', "").replace("%", "pct")  # Make sure there are no quotes within column name
+
+    if len(string) > PG_COLNAME_LIMIT:
+        # Shorten column to reasonable length. Prefix hash with 't' character, since hash may begin with number, which
+        # is invalid as PG column name
+        string_split = string.split("_")
+        string = f"t{hashlib.sha224('_'.join(string_split[0:-1]).encode('utf8')).hexdigest()[:7]}_{string_split[-1]}"
+
+    return string
 
 
 def get_constraints(executor, schema: str, table: str, pk: bool = True, child_fks: bool = False) -> List[Dict]:
@@ -316,29 +338,60 @@ def get_clustered_tables(executor) -> List[Dict]:
 class DatabaseManager:
     """Wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
 
-    Example how to limit postgresql transaction by working memory (as it uses 'get_connection()')
-    >>> db_manager = DatabaseManager(db_url="postgres://... etc ...", max_mb_mem_per_db_worker=64, engine_pool_size=2)
+    Example 1 instance with db_url
+    >>> db_url = "postgres://<user>:<password>@<host>:<port>/<name>"
+    >>> db_manager = DatabaseManager(db_url, max_mb_mem_per_db_worker=64, engine_pool_size=2)
+
+    Example 2 instance with db_settings
+    >>> db_settings = {"USER":"<user>", "PASSWORD":"<password>", "HOST":"<host>", "PORT":"<port>", "NAME":"<name>"}
+    >>> db_manager = DatabaseManager(db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
+
+    Example 3: limit postgresql transaction by working memory (as it uses 'get_connection()')
     >>> with db_manager.get_connection as conn:
     >>>     result = conn.execute("<sql_query>").all()
-    # Same instace can also be used to run postgresql transactions not limited by working memory:
+
+    Example 4: run postgresql transactions not limited by working memory
     >>> result = db_manager.engine.execute("<sql_query>").all()
     """
 
-    def __init__(self, db_url: str, max_mb_mem_per_db_worker: int = 8, engine_pool_size: int = 2) -> None:
+    def __init__(
+        self, db_url: str = None, db_settings: Dict = None, max_mb_mem_per_db_worker: int = 8, engine_pool_size: int = 2
+    ) -> None:
         """
-        :param db_url: string that starts with 'postgres://'
+        :param db_url: string that starts with 'postgres://' or 'postgresql://'
+        :param db_settings: a dictionary with keys 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'
         :param max_mb_mem_per_db_worker: integer that defaults to 8 (so 8mb).
-            Note that Nexus calculations have limited working memory of 128mb.
+            Note that Nexus calculations have limited working memory of 128mb (oct 2024)
         :param engine_pool_size: integer that the max number of connections that the connection pool will maintain in
-            an engine. Note that Nexus calculations can use max 2. And that Nexus users can use maximum 3.
+            an engine. Note that Nexus calculations can use max 2. And that Nexus users can use maximum 3. (oct 2024)
         """
-        self._db_url = db_url
-        self._max_mb_mem_per_db_worker = max_mb_mem_per_db_worker
+        self._db_url = self._set_db_url(db_url, db_settings)
+        self._max_mb_mem_per_db_worker = self._set_max_mb_mem_per_db_worker(max_mb_mem_per_db_worker)
+        self.engine = self._get_engine(engine_pool_size)
+
+    @staticmethod
+    def _set_db_url(db_url: str = None, db_settings: Dict = None) -> str:
+        assert bool(db_url) != bool(db_settings), "Use either argument 'db_url' or 'db_settings"
+        if db_settings:
+            try:
+                db_url = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{DATABASE['NAME']}"  # noqa
+            except KeyError as err:
+                msg = f"Argument 'db_settings' must have keys: 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'. err={err}"
+                raise KeyError(msg)
+
+        # Validate db_url
+        allowed_url_prefixes = ["postgres://", "postgresql://"]
+        valid_start = any([db_url.startswith(x) for x in allowed_url_prefixes])
+        assert valid_start, f"Argument 'db_url' must start with 'postgres://', got '{db_url}'"
+
+        return db_url
+
+    @staticmethod
+    def _set_max_mb_mem_per_db_worker(max_mb_mem_per_db_worker: int) -> int:
         if not (isinstance(max_mb_mem_per_db_worker, int) and max_mb_mem_per_db_worker > 0):
             msg = f"Argument max_mb_mem_per_db_worker must be an integer > 0, got {max_mb_mem_per_db_worker}"
             raise AssertionError(msg)
-        assert db_url.startswith("postgres://"), f"Argument 'db_url' must start with 'postgres://', got '{db_url}'"
-        self.engine = self._get_engine(engine_pool_size)
+        return max_mb_mem_per_db_worker
 
     def _get_engine(self, engine_pool_size: int):
         return sqlalchemy.create_engine(url=self._db_url, client_encoding="utf8", pool_size=engine_pool_size)

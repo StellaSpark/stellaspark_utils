@@ -338,19 +338,22 @@ def get_clustered_tables(executor) -> List[Dict]:
 class DatabaseManager:
     """Wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
 
-    Example 1 instance with db_url
+    Example 1 instance with argument 'db_url'
     >>> db_url = "postgres://<user>:<password>@<host>:<port>/<name>"
     >>> db_manager = DatabaseManager(db_url=db_url, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
-    Example 2 instance with db_settings
+    Example 2 instance with argument 'db_settings'
     >>> db_settings = {"USER":"<user>", "PASSWORD":"<password>", "HOST":"<host>", "PORT":"<port>", "NAME":"<name>"}
     >>> db_manager = DatabaseManager(db_settings=db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
-    Example 3: limit postgresql transaction by working memory (as it uses 'get_connection()')
-    >>> with db_manager.get_connection() as conn:
-    >>>     result = conn.execute("<sql_query>").all()
+    # This sql transaction is limited by working memory (max_mb_mem_per_db_worker):
+    >>> result = db_manager.execute("<sql_query>").all()
 
-    Example 4: run postgresql transactions not limited by working memory
+    # This is also limited by working memory, but please do not use it as '_get_connection()' is a protected method:
+    >>> with db_manager._get_connection() as connection:
+    >>>     result = connection.execute("<sql_query>").all()
+
+    # This sql transaction is NOT limited by working memory, so please do not use.
     >>> result = db_manager.engine.execute("<sql_query>").all()
     """
 
@@ -358,16 +361,26 @@ class DatabaseManager:
         self, db_url: str = None, db_settings: Dict = None, max_mb_mem_per_db_worker: int = 8, engine_pool_size: int = 2
     ) -> None:
         """
-        :param db_url: string that starts with 'postgres://' or 'postgresql://'
-        :param db_settings: a dictionary with keys 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'
+        Use
+            Or :param db_url: string that starts with 'postgres://' or 'postgresql://'
+            Or :param db_settings: a dictionary with keys 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'
         :param max_mb_mem_per_db_worker: integer that defaults to 8 (so 8mb).
             Note that Nexus calculations have limited working memory of 128mb (oct 2024)
         :param engine_pool_size: integer that the max number of connections that the connection pool will maintain in
             an engine. Note that Nexus calculations can use max 2. And that Nexus users can use maximum 3. (oct 2024)
         """
-        self._db_url = self._set_db_url(db_url, db_settings)
-        self._max_mb_mem_per_db_worker = self._set_max_mb_mem_per_db_worker(max_mb_mem_per_db_worker)
+        self._db_url: str = self._set_db_url(db_url, db_settings)
+        self._max_memory_mb: str = self._set_max_memory_mb(max_mb_mem_per_db_worker)
         self.engine = self._get_engine(engine_pool_size)
+
+    def execute(self, sql):
+        """Execute raw SQL queries directly on the database with limited working memory."""
+        with self._get_connection() as connection:
+            try:
+                connection.execute(sql)
+            except Exception as err:
+                msg = f"Could not execute sql '{sql}' with limited working memory '{self._max_memory_mb}MB'. err={err}"
+                raise AssertionError(msg)
 
     @staticmethod
     def _set_db_url(db_url: str = None, db_settings: Dict = None) -> str:
@@ -391,22 +404,19 @@ class DatabaseManager:
         return db_url
 
     @staticmethod
-    def _set_max_mb_mem_per_db_worker(max_mb_mem_per_db_worker: int) -> int:
+    def _set_max_memory_mb(max_mb_mem_per_db_worker: int) -> str:
+        """Argument max_mb_mem_per_db_worker:int = 128 return '128MB'."""
         if not (isinstance(max_mb_mem_per_db_worker, int) and max_mb_mem_per_db_worker > 0):
             msg = f"Argument max_mb_mem_per_db_worker must be an integer > 0, got {max_mb_mem_per_db_worker}"
             raise AssertionError(msg)
-        return max_mb_mem_per_db_worker
+        return f"{max_mb_mem_per_db_worker}MB"
 
-    def _get_engine(self, engine_pool_size: int):
+    def _get_engine(self, engine_pool_size: int) -> sqlalchemy.engine.base.Engine:
         return sqlalchemy.create_engine(url=self._db_url, client_encoding="utf8", pool_size=engine_pool_size)
 
     @contextmanager
-    def get_connection(self):
+    def _get_connection(self) -> sqlalchemy.engine.base.Connection:
         """Set the local work memory only once (DRY code).
-
-        Limit the sql transaction by working memory:
-        >>> with db_manager.get_connection() as conn:
-        >>>     result = conn.execute("<sql_query>").all()
 
         The @contextmanager decorator is used to simplify the creation of context managers, which handle setup and
         teardown operations (like opening and closing a database connection) around a block of code. It transforms a
@@ -414,5 +424,5 @@ class DatabaseManager:
         to manually manage the setup and teardown using a custom class or additional boilerplate code.
         """
         with self.engine.begin() as conn:
-            conn.execute(f"set local work_mem = '{self._max_mb_mem_per_db_worker}MB'")
+            conn.execute(f"set local work_mem = '{self._max_memory_mb}'")
             yield conn

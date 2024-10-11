@@ -1,5 +1,8 @@
-### 2.0 <small> Unreleased </small>
+### 2.1 <small> Unreleased </small>
  -
+
+### 2.0 <small> 2024-10-11 </small>
+ - Make db.DatabaseManager._max_memory_mb an integer instead of string and make it public
 
 ### 1.9 <small> 2024-10-11 </small>
  - Use consistent argument 'executor' in db.py instead of mixed 'executor' and 'engine'

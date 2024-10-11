@@ -382,7 +382,7 @@ class DatabaseManager:
             an engine. Note that Nexus calculations can use max 2. And that Nexus users can use maximum 3. (oct 2024)
         """
         self._db_url: str = self._set_db_url(db_url, db_settings)
-        self._max_memory_mb: str = self._set_max_memory_mb(max_mb_mem_per_db_worker)
+        self.max_memory_mb: int = self._set_max_memory_mb(max_mb_mem_per_db_worker)
         self.engine: Engine = self._get_engine(engine_pool_size)
 
     def execute(self, sql: str) -> CursorResult:
@@ -391,7 +391,7 @@ class DatabaseManager:
             try:
                 return connection.execute(sql)
             except Exception as err:
-                msg = f"Could not execute sql '{sql}' with limited working memory '{self._max_memory_mb}MB'. err={err}"
+                msg = f"Could not execute sql '{sql}' with limited working memory '{self.max_memory_mb}MB'. err={err}"
                 raise AssertionError(msg)
 
     @staticmethod
@@ -416,12 +416,12 @@ class DatabaseManager:
         return db_url
 
     @staticmethod
-    def _set_max_memory_mb(max_mb_mem_per_db_worker: int) -> str:
-        """Argument max_mb_mem_per_db_worker:int = 128 return '128MB'."""
+    def _set_max_memory_mb(max_mb_mem_per_db_worker: int) -> int:
+        """Validate 'max_mb_mem_per_db_worker' is an integer and lager than 0."""
         if not (isinstance(max_mb_mem_per_db_worker, int) and max_mb_mem_per_db_worker > 0):
             msg = f"Argument max_mb_mem_per_db_worker must be an integer > 0, got {max_mb_mem_per_db_worker}"
             raise AssertionError(msg)
-        return f"{max_mb_mem_per_db_worker}MB"
+        return max_mb_mem_per_db_worker
 
     def _get_engine(self, engine_pool_size: int) -> sqlalchemy.engine.base.Engine:
         return sqlalchemy.create_engine(url=self._db_url, client_encoding="utf8", pool_size=engine_pool_size)
@@ -436,5 +436,5 @@ class DatabaseManager:
         to manually manage the setup and teardown using a custom class or additional boilerplate code.
         """
         with self.engine.begin() as conn:
-            conn.execute(f"set local work_mem = '{self._max_memory_mb}'")
+            conn.execute(f"set local work_mem = '{self.max_memory_mb}MB'")
             yield conn

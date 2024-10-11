@@ -1,5 +1,9 @@
-### 1.9 <small> Unreleased </small>
+### 2.0 <small> Unreleased </small>
  -
+
+### 1.9 <small> 2024-10-11 </small>
+ - Use consistent argument 'executor' in db.py instead of mixed 'executor' and 'engine'
+ - Improve docstrings in db.py
 
 ### 1.8 <small> 2024-10-11 </small>
  - Relocate db.make_identifier() to text.make_identifier()

@@ -1,8 +1,14 @@
-### 1.7 <small> Unreleased </small>
+### 1.9 <small> Unreleased </small>
  -
 
+### 1.8 <small> 2024-10-11 </small>
+ - Relocate db.make_identifier() to text.make_identifier()
+ - Fix all typehints in text.py
+ - Add ExecutorType which is sqlalchemy Engine or Connection
+ - Make _get_connection() a public method get_connection() so the connection can be used in other db/text functions
+
 ### 1.7 <small> 2024-10-11 </small>
- - Fix all typehints
+ - Fix all typehints in db.py
 
 ### 1.6 <small> 2024-10-11 </small>
  - Let db.DatabaseManager.execute() return its result

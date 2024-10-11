@@ -8,15 +8,16 @@ from typing import Dict
 from typing import List
 from typing import Union
 
-import hashlib
 import logging
 import sqlalchemy
 
 
 logger = logging.getLogger(__name__)
 
+ExecutorType = Union[Engine, Connection]
 
-def get_indexes(engine: Engine, schema: str, table: str, pk: bool = True, unique: bool = True) -> List[Dict]:
+
+def get_indexes(executor: ExecutorType, schema: str, table: str, pk: bool = True, unique: bool = True) -> List[Dict]:
     """Return a list of dicts, each dict indicating the index name and definition.
 
     Args: engine : Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -29,7 +30,7 @@ def get_indexes(engine: Engine, schema: str, table: str, pk: bool = True, unique
     if not unique:
         sql_filter = sql_filter + " and indexdef not ilike '%% unique index %%'"
 
-    results = engine.execute(
+    results = executor.execute(
         f"select indexname as name, indexdef as definition "
         f"from pg_indexes "
         f"where schemaname = %s and tablename = %s {sql_filter}",
@@ -38,7 +39,7 @@ def get_indexes(engine: Engine, schema: str, table: str, pk: bool = True, unique
 
     if results is None:
         # Python DBAPI Cursor object (Django, Psycopg2)
-        indexes = [dict(zip([col[0] for col in engine.description], row)) for row in engine.fetchall()]
+        indexes = [dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()]
     else:
         # Database connection or engine-based query (SQLAlchemy)
         indexes = [dict(row) for row in results.fetchall()]
@@ -47,7 +48,7 @@ def get_indexes(engine: Engine, schema: str, table: str, pk: bool = True, unique
 
 
 def create_index(
-    engine: Engine,
+    engine: ExecutorType,
     schema: str,
     table: str,
     col: Union[str, List],
@@ -113,29 +114,9 @@ def create_index(
     engine.execute("reset maintenance_work_mem")
 
 
-def make_identifier(string: str) -> str:
-    """Make a PG-compatible identifier (table names, column names, constraint names, etc.).
-
-    - Ensure that any double-quotes are removed from the candidate-name
-    - Identifiers are limited to a maximum length of 63 bytes. In case we have an identifier that is longer than
-      allowed length, limit the length in a smart way; e.g. by maintaining the last part while creating a hash for the
-      first part.
-    """
-    PG_COLNAME_LIMIT = 63
-
-    string = str(string)  # Convert ints etc.
-    string = string.replace('"', "").replace("%", "pct")  # Make sure there are no quotes within column name
-
-    if len(string) > PG_COLNAME_LIMIT:
-        # Shorten column to reasonable length. Prefix hash with 't' character, since hash may begin with number, which
-        # is invalid as PG column name
-        string_split = string.split("_")
-        string = f"t{hashlib.sha224('_'.join(string_split[0:-1]).encode('utf8')).hexdigest()[:7]}_{string_split[-1]}"
-
-    return string
-
-
-def get_constraints(engine: Engine, schema: str, table: str, pk: bool = True, child_fks: bool = False) -> List[Dict]:
+def get_constraints(
+    engine: ExecutorType, schema: str, table: str, pk: bool = True, child_fks: bool = False
+) -> List[Dict]:
     """Return a list of dicts, each dict indicating the constraint name, type, definition etc.
 
     Args: engine: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -212,7 +193,7 @@ def get_constraints(engine: Engine, schema: str, table: str, pk: bool = True, ch
     return constraints
 
 
-def get_dependent_views(engine: Engine, schema: str, table: str) -> List[Dict]:
+def get_dependent_views(engine: ExecutorType, schema: str, table: str) -> List[Dict]:
     """Get all views that depend on this table.
 
     Args: engine: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -252,7 +233,7 @@ def get_dependent_views(engine: Engine, schema: str, table: str) -> List[Dict]:
     return dependent_views
 
 
-def get_dependent_matviews(engine: Engine, schema: str, table: str) -> List[Dict]:
+def get_dependent_matviews(engine: ExecutorType, schema: str, table: str) -> List[Dict]:
     """Get all materialized views that depend on this table.
 
     Args: engine: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -279,7 +260,7 @@ def get_dependent_matviews(engine: Engine, schema: str, table: str) -> List[Dict
     return dependent_matviews
 
 
-def get_privileges(engine: Engine, schema: str, table: str) -> List[Dict]:
+def get_privileges(engine: ExecutorType, schema: str, table: str) -> List[Dict]:
     """List user privileges on table.
 
     Args: engine: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -306,7 +287,7 @@ def get_privileges(engine: Engine, schema: str, table: str) -> List[Dict]:
     return privileges
 
 
-def get_columns(engine: Engine, schema: str, table: str, name: str = None) -> List[str]:
+def get_columns(engine: ExecutorType, schema: str, table: str, name: str = None) -> List[str]:
     """Get all column names of table in schema.
 
     Args: engine: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -332,7 +313,7 @@ def get_columns(engine: Engine, schema: str, table: str, name: str = None) -> Li
     return [col[0] for col in cols]
 
 
-def get_clustered_tables(engine: Engine) -> List[Dict]:
+def get_clustered_tables(engine: ExecutorType) -> List[Dict]:
     """Get a list of all clustered tables.
 
     Args: engine: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -376,8 +357,8 @@ class DatabaseManager:
     # This sql transaction is limited by working memory (max_mb_mem_per_db_worker):
     >>> result = db_manager.execute("<sql_query>").all()
 
-    # This is also limited by working memory, but please do not use it as '_get_connection()' is a protected method:
-    >>> with db_manager._get_connection() as connection:
+    # This is also limited by working memory:
+    >>> with db_manager.get_connection() as connection:
     >>>     result = connection.execute("<sql_query>").all()
 
     # This sql transaction is NOT limited by working memory, so please do not use.
@@ -398,11 +379,11 @@ class DatabaseManager:
         """
         self._db_url: str = self._set_db_url(db_url, db_settings)
         self._max_memory_mb: str = self._set_max_memory_mb(max_mb_mem_per_db_worker)
-        self.engine = self._get_engine(engine_pool_size)
+        self.engine: Engine = self._get_engine(engine_pool_size)
 
     def execute(self, sql: str) -> CursorResult:
         """Execute raw SQL queries directly on the database with limited working memory."""
-        with self._get_connection() as connection:
+        with self.get_connection() as connection:
             try:
                 return connection.execute(sql)
             except Exception as err:
@@ -442,7 +423,7 @@ class DatabaseManager:
         return sqlalchemy.create_engine(url=self._db_url, client_encoding="utf8", pool_size=engine_pool_size)
 
     @contextmanager
-    def _get_connection(self) -> Connection:
+    def get_connection(self) -> Connection:
         """Set the local work memory only once (DRY code).
 
         The @contextmanager decorator is used to simplify the creation of context managers, which handle setup and

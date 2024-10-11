@@ -1,6 +1,9 @@
 ### 1.7 <small> Unreleased </small>
  -
 
+### 1.7 <small> 2024-10-11 </small>
+ - Fix all typehints
+
 ### 1.6 <small> 2024-10-11 </small>
  - Let db.DatabaseManager.execute() return its result
 

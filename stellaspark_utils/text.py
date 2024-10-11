@@ -2,6 +2,7 @@ from calendar import monthrange
 from datetime import datetime
 from datetime import timedelta
 from typing import List
+from typing import Tuple
 from typing import Union
 
 import pytz
@@ -9,7 +10,7 @@ import re
 import unidecode
 
 
-def q(ids) -> Union[str, List]:
+def q(ids: Union[str, List[str], Tuple[str]]) -> Union[str, List[str]]:
     """Return quoted and sanitized SQL column or table identifiers."""
     if isinstance(ids, (list, tuple)):
         return [f'"{_id}"' for _id in ids]
@@ -17,7 +18,7 @@ def q(ids) -> Union[str, List]:
         return f'"{ids}"'
 
 
-def sq(string: Union[str, List]):
+def sq(string: Union[str, List]) -> List[str]:
     """Return single-quoted strings that are safe for HTML."""
     return (
         [chr(39) + str(elem) + chr(39) for elem in string]
@@ -26,7 +27,9 @@ def sq(string: Union[str, List]):
     )
 
 
-def to_lwu(string, keep_colons=True, keep_minus=False, keep_double_underscores=False):
+def to_lwu(
+    string: str, keep_colons: bool = True, keep_minus: bool = False, keep_double_underscores: bool = False
+) -> str:
     """Convert string to lowercase_with_underscores format.
 
     Also replace dots and hyphens with underscores for Postgres table name compatibility. Maintaining or removing
@@ -105,7 +108,7 @@ def is_float(string: str) -> bool:
         return False
 
 
-def extract_sql_columns(sql_string) -> List[str]:
+def extract_sql_columns(sql_string: str) -> List[str]:
     """Extract column names from an SQL 'where' statement."""
     split_by = " and | or | in | not between | between | order by | asc | desc | is null| is not null|!=|<=|>=|<>|>|<|="
     elems = re.split(split_by, sql_string.lower())

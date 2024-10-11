@@ -377,7 +377,7 @@ class DatabaseManager:
         """Execute raw SQL queries directly on the database with limited working memory."""
         with self._get_connection() as connection:
             try:
-                connection.execute(sql)
+                return connection.execute(sql)
             except Exception as err:
                 msg = f"Could not execute sql '{sql}' with limited working memory '{self._max_memory_mb}MB'. err={err}"
                 raise AssertionError(msg)

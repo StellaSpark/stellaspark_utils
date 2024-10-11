@@ -1,5 +1,8 @@
-### 1.6 <small> Unreleased </small>
+### 1.7 <small> Unreleased </small>
  -
+
+### 1.6 <small> 2024-10-11 </small>
+ - Let db.DatabaseManager.execute() return its result
 
 ### 1.5 <small> 2024-10-11 </small>
  - Add method db.DatabaseManager.execute() and make db.DatabaseManager._get_connection() private method

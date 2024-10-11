@@ -34,7 +34,7 @@ flake8      # Validate the code syntax
 
 ###### Prepare release
 1. Create a [Pypi account] and after registering, make sure your account has a pypi token
-2. Update version in stellaspark_utils/setup.py
+2. Update version in setup.py
 3. Update the CHANGES.rst with a change message and release date of today
 4. Optionally, autoformat code (see above)
 5. Push changes to GitHub (preferably in a branch 'release_<x>_<y>')
@@ -42,11 +42,12 @@ flake8      # Validate the code syntax
 ###### Release manually
 ```
 cd <project_root>
+rmdir /s /q "dist"                                      # Remove dist dir (to avoid uploading old distributions)                       
 pipenv shell                                            # Activate pipenv environnment (see 'Create an environment' above)
 python setup.py sdist                                   # Create distribution (with a '.tar.gz' in it)
 twine check dist/*                                      # Validate all distibutions in stellaspark_utils/dist
 twine upload dist/*                                     # Upload distribution to pypi.org
-# You will be prompted for a username and password. 
+# You will be prompted for a username and password: 
 # - for the username, use __token__ (yes literally '__token__')
 # - for the password, use the pypi token value, including the 'pypi-' prefix
 ```

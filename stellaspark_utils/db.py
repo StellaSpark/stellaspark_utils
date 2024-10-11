@@ -317,6 +317,58 @@ def get_columns(executor: ExecutorType, schema: str, table: str, name: str = Non
     return [col[0] for col in cols]
 
 
+def get_tables(executor: ExecutorType, schema: str, name: str = None, unlogged: bool = None) -> List[str]:
+    """Return tables (including foreign tables).
+
+    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Argument 'name': optionally filter on table name
+    Argument 'unlogged': optionally filter on unlogged:
+        - True: only return unlogged tables
+        - False: only return logged tables
+        - None: return both unlogged and logged tables
+    """
+    if name:
+        if "%" in name:
+            name = name.replace("%", "%%")  # Double percent-signs for proper escaping in SQLAlchemy
+            name_filter = f"and table_name like '{name}'"
+            name_filter_foreign = f"and foreign_table_name like '{name}'"
+        else:
+            name_filter = f"and table_name = '{name}'"
+            name_filter_foreign = f"and foreign_table_name = '{name}'"
+    else:
+        name_filter = ""
+        name_filter_foreign = ""
+
+    # Ensure that we don't get any views (explicitly call for table type 'BASE TABLE')
+    tables = executor.execute(
+        f"select table_name "
+        f"from information_schema.tables "
+        f"where table_schema = '{schema}' "
+        f"and table_type = 'BASE TABLE' {name_filter}"
+    ).fetchall()
+
+    if tables and unlogged is not None:
+        sql_in = ",".join([f"'{table[0]}'" for table in tables])
+        tables = executor.execute(
+            f"select relname "
+            f"from pg_class "
+            f"where relname in ({sql_in}) "
+            f"and relnamespace = '{schema}'::regnamespace::oid "
+            f"and relpersistence {'=' if unlogged else '!='} 'u'"
+        ).fetchall()
+
+    if unlogged is None:
+        # Add foreign tables (these don't have a logged property and can therefore not be filtered on 'unlogged' status)
+        tables_foreign = executor.execute(
+            f"select foreign_table_name "
+            f"from information_schema.foreign_tables "
+            f"where foreign_table_schema = '{schema}' {name_filter_foreign}"
+        ).fetchall()
+        tables = tables + tables_foreign
+
+    return [table[0] for table in tables]
+
+
 def get_clustered_tables(executor: ExecutorType) -> List[Dict]:
     """Get a list of all clustered tables.
 

@@ -1,5 +1,8 @@
-### 2.1 <small> Unreleased </small>
+### 2.2 <small> Unreleased </small>
  -
+
+### 2.1 <small>  2024-10-11 </small>
+ - Add db.get_tables()
 
 ### 2.0 <small> 2024-10-11 </small>
  - Make db.DatabaseManager._max_memory_mb an integer instead of string and make it public

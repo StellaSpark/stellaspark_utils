@@ -10,7 +10,7 @@ readme_md_path = Path(".").resolve() / "README.md"
 with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-version = "2.0"
+version = "2.1"
 
 install_requires = ["pytz", "unidecode", "sqlalchemy"]
 tests_require = [

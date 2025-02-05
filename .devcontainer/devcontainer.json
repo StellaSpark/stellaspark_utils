@@ -1,0 +1,66 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
+{
+	"name": "Stellaspark utils",
+	"dockerComposeFile": "../docker-compose.yml",
+	"service": "stellaspark_utils",
+	"runServices": [
+		"stellaspark_utils"
+	],
+	"workspaceFolder": "/workspaces",
+	
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {}
+	},
+	
+	// Tool-specific properties.
+	"customizations": {
+		"vscode": {
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy",
+				// "ms-python.python",  // required for pytest
+				"mhutchie.git-graph"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"editor.inlineSuggest.showToolbar": "onHover",
+				"python.testing.pytestArgs": [
+					"."
+				],
+				"python.testing.unittestEnabled": false,
+				"python.testing.pytestEnabled": true,
+				// "python.envFile": "/workspaces/.env",
+				"launch": {
+					"version": "0.2.0",
+					"configurations": [
+						{
+							"name": "Run helpers task",
+							"type": "debugpy",
+							"request": "launch",
+							"program": "main.py",
+							"console": "integratedTerminal",
+							"justMyCode": false // Allows debugging into third-party libraries
+				 		},
+    					{
+							"name": "Debug Pytest",
+							"type": "debugpy",
+							"request": "launch",
+							"module": "pytest",
+							"args": [
+								"--maxfail=1",
+								"--disable-warnings",
+								"-s"
+							],
+							"console": "integratedTerminal",
+							"justMyCode": false
+						}
+				 	],
+				 	"compounds": []
+				 }
+			}
+		}
+	}
+}

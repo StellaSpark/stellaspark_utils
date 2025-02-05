@@ -10,13 +10,17 @@ readme_md_path = Path(".").resolve() / "README.md"
 with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-version = "2.1"
+version = "2.2"
 
-install_requires = ["pytz", "unidecode", "sqlalchemy"]
-tests_require = [
+# Use sqlalchemy <2.0 to avoid mandatory use of a text(<sql>)
+install_requires = ["pytz", "unidecode", "sqlalchemy<2.0"]
+tests_requires = [
     "pytest",
+    "pytest-cov",
+    "python-dotenv",
+    "psycopg2-binary",
+    "requests",
 ]
-
 
 setup(
     name="stellaspark-utils",
@@ -34,10 +38,10 @@ setup(
     download_url=f"https://github.com/StellaSpark/stellaspark_utils/archive/v{version}.tar.gz",
     keywords=["stellaspark", "nexus", "utils", "calculation", "python"],
     zip_safe=False,
-    python_requires=">=3.7",
+    python_requires=">=3.7, <=3.12",
     install_requires=install_requires,
-    tests_require=tests_require,
-    extras_require={"test": tests_require},
+    tests_require=tests_requires,
+    extras_require={"test": tests_requires},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
@@ -49,6 +53,8 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Software Development :: Build Tools",
     ],
 )

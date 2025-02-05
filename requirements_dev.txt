@@ -1,5 +1,4 @@
-black           # autoformat code
-isort           # autoformat code
-flake8          # autoformat code
-twine           # required for releasing
-python-dotenv   # required for releasing
+black           # used for autoformat code
+isort           # used for autoformat code
+flake8          # used for autoformat code
+twine           # used for releasing

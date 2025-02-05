@@ -29,7 +29,10 @@ def sq(string: Union[str, List]) -> List[str]:
 
 
 def to_lwu(
-    string: str, keep_colons: bool = True, keep_minus: bool = False, keep_double_underscores: bool = False
+    string: str,
+    keep_colons: bool = True,
+    keep_minus: bool = False,
+    keep_double_underscores: bool = False,
 ) -> str:
     """Convert string to lowercase_with_underscores format.
 

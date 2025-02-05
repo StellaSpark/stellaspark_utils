@@ -3,20 +3,15 @@
 
 
 ### Description
-A collection of python utilities for StellaSpark [Nexus Digital Twin] technology.
+A collection of python utilities for StellaSpark [Nexus Digital Twin] technology. 
+Ready to use for 3.7 >= python >= 3.11.
 
 
-### Usage get_indexed
-```
-from stellaspark_utils.db import get_indexes
-from stellaspark_utils.text import parse_time_placeholders
-```
+### Usage
 
-#### Examples DatabaseManager
-##### DatabaseManager is a wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
+##### Examples DatabaseManager, which is a wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
 ```
 from stellaspark_utils.db import DatabaseManager
-from sqlalchemy.sql import text
    
 # Example 1 instance with argument 'db_url'
 db_url = "postgres://<user>:<password>@<host>:<port>/<name>"

@@ -1,0 +1,9 @@
+services:
+  stellaspark_utils:
+    build:
+      context: .
+    image: stellaspark-utils:latest
+    container_name: stellaspark-utils
+    network_mode: bridge
+    volumes:
+      - .:/workspaces:cached

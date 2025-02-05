@@ -3,6 +3,9 @@ from contextlib import contextmanager
 from sqlalchemy.engine import Connection
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.cursor import CursorResult
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.sql import text
+from sqlalchemy.sql.elements import TextClause
 from stellaspark_utils.text import make_identifier
 from stellaspark_utils.text import q
 from typing import Dict
@@ -18,7 +21,13 @@ logger = logging.getLogger(__name__)
 ExecutorType = Union[Engine, Connection]
 
 
-def get_indexes(executor: ExecutorType, schema: str, table: str, pk: bool = True, unique: bool = True) -> List[Dict]:
+def get_indexes(
+    executor: ExecutorType,
+    schema: str,
+    table: str,
+    pk: bool = True,
+    unique: bool = True,
+) -> List[Dict]:
     """Return a list of dicts, each dict indicating the index name and definition.
 
     Args: executor : Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
@@ -62,7 +71,10 @@ def create_index(
     Args: executor : Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
     Argument 'col' may be a str, list of str or list of lists
     """
-    assert method in ("auto", "gist"), "Only 'auto' and 'gist' are currently supported as indexing method"
+    assert method in (
+        "auto",
+        "gist",
+    ), "Only 'auto' and 'gist' are currently supported as indexing method"
 
     cols = [col] if isinstance(col, str) else col  # Ensure that cols is a list
     indexes_existing = [index["name"] for index in get_indexes(executor, schema, table, pk=False)]
@@ -97,7 +109,7 @@ def create_index(
                     sql_col_in = f"st_transform({q(col_in[0])}, {srid})" if srid else q(col_in[0])
                     executor.execute(f"create index {q(index_name)} on {schema}.{q(table)} using gist ({sql_col_in})")
                 index_created = True
-            except sqlalchemy.exc.OperationalError:
+            except OperationalError:
                 logger.warning(
                     f"Unable to create index, some values in column {','.join(q(col_in))} are too long. "
                     f"Proceeding without index."
@@ -117,7 +129,11 @@ def create_index(
 
 
 def get_constraints(
-    executor: ExecutorType, schema: str, table: str, pk: bool = True, child_fks: bool = False
+    executor: ExecutorType,
+    schema: str,
+    table: str,
+    pk: bool = True,
+    child_fks: bool = False,
 ) -> List[Dict]:
     """Return a list of dicts, each dict indicating the constraint name, type, definition etc.
 
@@ -307,7 +323,7 @@ def get_columns(executor: ExecutorType, schema: str, table: str, name: str = Non
     else:
         name_filter = ""
 
-    sql = (
+    sql = text(
         f"select column_name from information_schema.columns "
         f"where table_schema = '{schema}' "
         f"and table_name = '{table}' {name_filter}"
@@ -402,6 +418,8 @@ def get_clustered_tables(executor: ExecutorType) -> List[Dict]:
 class DatabaseManager:
     """Wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
 
+    >>> from sqlalchemy.sql import text
+
     Example 1 instance with argument 'db_url'
     >>> db_url = "postgres://<user>:<password>@<host>:<port>/<name>"
     >>> db_manager = DatabaseManager(db_url=db_url, max_mb_mem_per_db_worker=64, engine_pool_size=2)
@@ -411,33 +429,52 @@ class DatabaseManager:
     >>> db_manager = DatabaseManager(db_settings=db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
     # This sql transaction is limited by working memory (max_mb_mem_per_db_worker):
-    >>> result = db_manager.execute("<sql_query>").all()
+    >>> result = db_manager.execute(text"<sql_query>")).all()
 
     # This is also limited by working memory:
     >>> with db_manager.get_connection() as connection:
-    >>>     result = connection.execute("<sql_query>").all()
+    >>>     result = connection.execute(text()"<sql_query>")).all()
 
     # This sql transaction is NOT limited by working memory, so please do not use.
-    >>> result = db_manager.engine.execute("<sql_query>").all()
+    >>> result = db_manager.engine.execute(text("<sql_query>")).all()
     """
 
     def __init__(
-        self, db_url: str = None, db_settings: Dict = None, max_mb_mem_per_db_worker: int = 8, engine_pool_size: int = 2
+        self,
+        db_url: str = None,
+        db_settings: Dict = None,
+        max_mb_mem_per_db_worker: int = 8,
+        engine_pool_size: int = 2,
     ) -> None:
-        """
-        Use
-            Or :param db_url: string that starts with 'postgres://' or 'postgresql://'
-            Or :param db_settings: a dictionary with keys 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'
-        :param max_mb_mem_per_db_worker: integer that defaults to 8 (so 8mb).
-            Note that Nexus calculations have limited working memory of 128mb (oct 2024)
-        :param engine_pool_size: integer that the max number of connections that the connection pool will maintain in
-            an engine. Note that Nexus calculations can use max 2. And that Nexus users can use maximum 3. (oct 2024)
+        """Database Manager Constructor.
+
+        Arguments:
+            - db_url and db_settings: Use one of the two
+                Or db_url: string that starts with 'postgres://' or 'postgresql://'
+                Or db_settings: a dictionary with keys 'USER', 'PASSWORD', 'HOST', 'PORT', 'NAME'
+            - max_mb_mem_per_db_worker: integer that defaults to 8 (so 8mb).
+                Note that Nexus calculations have limited working memory of 128mb (oct 2024)
+            - engine_pool_size: integer that the max number of connections that the connection pool will maintain in
+              an engine. Note that Nexus calculations can use max 2. And that Nexus users can use maximum 3. (oct 2024)
         """
         self._db_url: str = self._set_db_url(db_url, db_settings)
         self.max_memory_mb: int = self._set_max_memory_mb(max_mb_mem_per_db_worker)
         self.engine: Engine = self._get_engine(engine_pool_size)
 
-    def execute(self, sql: str) -> CursorResult:
+    @contextmanager
+    def get_connection(self) -> Connection:
+        """Get a connection in which the local working memory is set.
+
+        The @contextmanager decorator is used to simplify the creation of context managers, which handle setup and
+        teardown operations (like opening and closing a database connection) around a block of code. It transforms a
+        generator function into a context manager that can be used in a with statement. Without it, you would need
+        to manually manage the setup and teardown using a custom class or additional boilerplate code.
+        """
+        with self.engine.begin() as conn:
+            conn.execute(text(f"set local work_mem = '{self.max_memory_mb}MB'"))
+            yield conn
+
+    def execute(self, sql: Union[str, TextClause]) -> CursorResult:
         """Execute raw SQL queries directly on the database with limited working memory."""
         with self.get_connection() as connection:
             try:
@@ -445,6 +482,13 @@ class DatabaseManager:
             except Exception as err:
                 msg = f"Could not execute sql '{sql}' with limited working memory '{self.max_memory_mb}MB'. err={err}"
                 raise AssertionError(msg)
+
+    @staticmethod
+    def _ensure_sql_is_text(sql: Union[str, TextClause]) -> TextClause:
+        if isinstance(sql, str):
+            sql = text(sql)
+        assert isinstance(sql, TextClause), f"sql '{sql}' must be a sqlalchemy.sql.text (=TextClause) object"
+        return sql
 
     @staticmethod
     def _set_db_url(db_url: str = None, db_settings: Dict = None) -> str:
@@ -475,18 +519,5 @@ class DatabaseManager:
             raise AssertionError(msg)
         return max_mb_mem_per_db_worker
 
-    def _get_engine(self, engine_pool_size: int) -> sqlalchemy.engine.base.Engine:
+    def _get_engine(self, engine_pool_size: int) -> Engine:
         return sqlalchemy.create_engine(url=self._db_url, client_encoding="utf8", pool_size=engine_pool_size)
-
-    @contextmanager
-    def get_connection(self) -> Connection:
-        """Get a connection in which the local working memory is set.
-
-        The @contextmanager decorator is used to simplify the creation of context managers, which handle setup and
-        teardown operations (like opening and closing a database connection) around a block of code. It transforms a
-        generator function into a context manager that can be used in a with statement. Without it, you would need
-        to manually manage the setup and teardown using a custom class or additional boilerplate code.
-        """
-        with self.engine.begin() as conn:
-            conn.execute(f"set local work_mem = '{self.max_memory_mb}MB'")
-            yield conn

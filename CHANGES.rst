@@ -1,7 +1,13 @@
-### 2.2 <small> Unreleased </small>
+### 2.3 <small> Unreleased </small>
  -
 
-### 2.1 <small>  2024-10-11 </small>
+### 2.2 <small> 2025-02-05 </small>
+ - Ensure sqlalchemy version < 2.0 to avoid that engine.execute requires a text(string) instead of just a string
+ - Setup pytests
+ - Enable make_nice to autoformat code
+ - Use docker devcontainers for local development
+
+### 2.1 <small> 2024-10-11 </small>
  - Add db.get_tables()
 
 ### 2.0 <small> 2024-10-11 </small>

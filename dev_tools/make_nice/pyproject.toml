@@ -23,12 +23,5 @@ exclude = '''
   | buck-out/
   | build/
   | dist/
-  # some nexus specific files and dirs to exclude
-  # --------------------------------------
-  | models.py                           # in nexus-backend
-  | migrations/                         # in nexus-backend
-  | data/constants.py                   # in nexus-backend
-  | ogr2ogr.py                          # in nexus-harvester/utils
-  | validate_cloud_optimized_geotiff.py # in nexus-harvester/utils
 )
 '''

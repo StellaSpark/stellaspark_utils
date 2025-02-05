@@ -9,10 +9,13 @@ Ready to use for 3.7 >= python >= 3.11.
 
 ### Usage
 
-##### Examples DatabaseManager, which is a wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
+##### Examples 
 ```
-from stellaspark_utils.db import DatabaseManager
-   
+from stellaspark_utils.db import get_indexes, DatabaseManager
+from stellaspark_utils.text import parse_time_placeholders
+
+# DatabaseManager is a wrapper around a SQLAlchemy engine to set working memomry and pool_size the DRY way.
+
 # Example 1 instance with argument 'db_url'
 db_url = "postgres://<user>:<password>@<host>:<port>/<name>"
 db_manager = DatabaseManager(db_url=db_url, max_mb_mem_per_db_worker=64, engine_pool_size=2)

@@ -72,6 +72,7 @@ pytest
 cd <project_root>
 rmdir /s /q "dist"                                      # Remove dist dir (to avoid uploading old distributions)                       
 pipenv shell                                            # Activate pipenv environnment (see 'Create an environment' above)
+pip install twine                                       # Install twine (to upload package to pypi)
 python setup.py sdist                                   # Create distribution (with a '.tar.gz' in it)
 twine check dist/*                                      # Validate all distibutions in stellaspark_utils/dist
 twine upload dist/*                                     # Upload distribution to pypi.org

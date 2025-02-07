@@ -1,4 +1,3 @@
 black           # used for autoformat code
 isort           # used for autoformat code
 flake8          # used for autoformat code
-twine           # used for releasing

@@ -13,12 +13,11 @@ with open(readme_md_path.as_posix(), encoding="utf-8") as f:
 version = "2.2"
 
 # Use sqlalchemy <2.0 to avoid mandatory use of a text(<sql>)
-install_requires = ["pytz", "unidecode", "sqlalchemy<2.0"]
+install_requires = ["pytz", "unidecode", "sqlalchemy<2.0", "psycopg2-binary"]
 tests_requires = [
     "pytest",
     "pytest-cov",
     "python-dotenv",
-    "psycopg2-binary",
     "requests",
 ]
 

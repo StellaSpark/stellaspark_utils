@@ -2,5 +2,4 @@ debugpy
 pytest         
 pytest-cov     
 python-dotenv  
-psycopg2-binary
 requests

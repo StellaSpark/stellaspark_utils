@@ -1,8 +1,9 @@
 ### 2.3 <small> Unreleased </small>
  -
 
-### 2.2 <small> 2025-02-05 </small>
+### 2.2 <small> 2025-02-07 </small>
  - Ensure sqlalchemy version < 2.0 to avoid that engine.execute requires a text(string) instead of just a string
+ - Add 'psycopg2-binary' to setup.py install-requires
  - Setup pytests
  - Enable make_nice to autoformat code
  - Use docker devcontainers for local development

@@ -62,7 +62,7 @@ pytest
 
 ##### Test coverage (release 2.3)
 ```
----------- coverage: platform linux, python 3.11.11-final-0 ----------
+---------- coverage: platform linux, python 3.12.9-final-0 -----------
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
 setup.py                       10     10     0%

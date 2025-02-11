@@ -2,14 +2,13 @@
 [Pypi account]:https://pypi.org/account/register/
 
 
-### Description
+## Description
 A collection of python utilities for StellaSpark [Nexus Digital Twin] technology. 
-Ready to use for 3.7 >= python >= 3.11.
+Ready to use for 3.7 >= python >= 3.12.
 
 
-### Usage
+## Usage
 
-##### Examples 
 ```
 from stellaspark_utils.db import get_indexes, DatabaseManager
 from stellaspark_utils.text import parse_time_placeholders
@@ -35,39 +34,54 @@ with db_manager.get_connection() as connection:
 result = db_manager.engine.execute("<sql_query>").all()
 ```
 
-### Development
 
-#### Build using command line
+## Development
+
+### Build using command line
 ```
 cd <project_root>
 docker-compose build stellaspark_utils
 ```
 
-#### Build and Run/debug using VS Code
+### Build and Run/debug using VS Code
 1. Open this directory in VS Code
 2. Or in 'Remote Explorer' (left top screen) choose 'New Dev Container'. Or click 'Open a Remote Window (left bottom screen) and then choose 'Reopen in Container'
 3. Now edit 'run_helper_id' in main.py then run the code
 
-#### Autoformat code:
+### Autoformat code:
 ```
 cd <project_root>
 make_nice
 ```
 
-#### Test
+### Test
 ```
 cd <project_root>
 pytest
 ```
 
-#### Prepare release
+##### Test coverage (release 2.3)
+```
+---------- coverage: platform linux, python 3.11.11-final-0 ----------
+Name                        Stmts   Miss  Cover
+-----------------------------------------------
+setup.py                       10     10     0%
+stellaspark_utils/db.py       195    133    32%
+stellaspark_utils/text.py     110     87    21%
+-----------------------------------------------
+TOTAL                         315    230    27%
+```
+
+### Release 
+
+##### Preparation
 1. Create a [Pypi account] and after registering, make sure your account has a pypi token
 2. Update version in setup.py
 3. Update the CHANGES.rst with a change message and release date of today
 4. Optionally, autoformat code (see above)
 5. Push changes to GitHub (preferably in a branch 'release_<x>_<y>')
 
-#### Release manually
+##### Release manually
 ```
 cd <project_root>
 rmdir /s /q "dist"                                      # Remove dist dir (to avoid uploading old distributions)                       

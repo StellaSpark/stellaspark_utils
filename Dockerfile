@@ -1,5 +1,4 @@
-# Use python 3.11 as that is the latest version that can work without sqlalchemy<2.0 (see requirements.txt)
-FROM python:3.11-slim-bookworm 
+FROM python:3.12-slim-bookworm 
 LABEL maintainer="StellaSpark"
 
 # Install Python and add code

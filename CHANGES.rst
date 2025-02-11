@@ -1,5 +1,9 @@
-### 2.3 <small> Unreleased </small>
+### 2.4 <small> Unreleased </small>
  -
+
+### 2.3 <small> 2025-02-11 </small>
+ - Change project name from 'stellaspark-utils' to 'stellaspark_utils' to comply with pypi's 'PEP 625'
+ - Enable to work with python 3.12
 
 ### 2.2 <small> 2025-02-07 </small>
  - Ensure sqlalchemy version < 2.0 to avoid that engine.execute requires a text(string) instead of just a string

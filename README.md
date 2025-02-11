@@ -4,7 +4,7 @@
 
 ## Description
 A collection of python utilities for StellaSpark [Nexus Digital Twin] technology. 
-Ready to use for 3.7 >= python >= 3.12.
+Ready to use for 3.7 >= python <= 3.12.9.
 
 
 ## Usage
@@ -60,7 +60,7 @@ cd <project_root>
 pytest
 ```
 
-##### Test coverage (release 2.3)
+##### Test coverage (release 2.4)
 ```
 ---------- coverage: platform linux, python 3.12.9-final-0 -----------
 Name                        Stmts   Miss  Cover

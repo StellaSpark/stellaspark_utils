@@ -21,7 +21,6 @@
 			"extensions": [
 				"ms-python.vscode-pylance",
 				"ms-python.debugpy",
-				// "ms-python.python",  // required for pytest
 				"mhutchie.git-graph"
 			],
 			"settings": {

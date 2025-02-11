@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm 
+FROM python:3.12.9-slim-bookworm 
 LABEL maintainer="StellaSpark"
 
 # Install Python and add code

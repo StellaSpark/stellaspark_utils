@@ -1,5 +1,8 @@
-### 2.5 <small> Unreleased </small>
+### 2.6 <small> Unreleased </small>
  -
+ 
+### 2.5 <small> 2025-04-8 </small>
+ - Extend pyproject.toml to tell pip to use setuptools to build this package
 
 ### 2.4 <small> 2025-02-11 </small>
  - Enable to work with python 3.12.9

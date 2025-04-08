@@ -54,3 +54,8 @@ omit = [
 [tool.coverage.report]
 skip_empty = true
 show_missing = false
+
+# tell pip to use setuptools to build this package, and here are the requirements
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

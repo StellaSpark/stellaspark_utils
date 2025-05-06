@@ -1,6 +1,9 @@
-### 2.6 <small> Unreleased </small>
+### 2.7 <small> Unreleased </small>
  -
- 
+
+### 2.6 <small> 2025-05-06 </small>
+ - Fix table constraints by preventing duplicate self-referencing foreign keys
+
 ### 2.5 <small> 2025-04-8 </small>
  - Extend pyproject.toml to tell pip to use setuptools to build this package
 

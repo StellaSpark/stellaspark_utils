@@ -10,7 +10,7 @@ readme_md_path = Path(".").resolve() / "README.md"
 with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-version = "2.5"
+version = "2.6"
 
 # Use sqlalchemy <2.0 to avoid mandatory use of a text(<sql>). Only the last sqlalchymy version
 # before 2.0 (version 1.4.49) can work with python 3.12.9 (so python 3.12 is included below).

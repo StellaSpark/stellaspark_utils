@@ -60,9 +60,10 @@ cd <project_root>
 pytest
 ```
 
-##### Test coverage (release 2.4)
+##### Test coverage (release 2.6)
 ```
----------- coverage: platform linux, python 3.12.9-final-0 -----------
+coverage: platform linux, python 3.12.9-final-0
+
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
 setup.py                       10     10     0%

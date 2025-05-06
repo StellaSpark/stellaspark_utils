@@ -188,8 +188,9 @@ def get_constraints(
             "left join pg_attribute referenced_field on (referenced_field.attrelid = c.confrelid and referenced_field.attnum = conf.confkey) "  # noqa
             "where c.contype = 'f' "
             "and tbl.relnamespace::regnamespace::text = %s "
-            "and referenced_tbl.relname = %s ",
-            (schema, table),
+            "and referenced_tbl.relname = %s "
+            "and tbl.relname != %s",  # Exclude self-referencing foreign keys, those are already part of previous query
+            (schema, table, table),
         )
         if results is None:
             # Python DBAPI Cursor object (Django, Psycopg2)

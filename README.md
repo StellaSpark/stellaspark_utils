@@ -60,17 +60,17 @@ cd <project_root>
 pytest
 ```
 
-##### Test coverage (release 2.6)
-```
-coverage: platform linux, python 3.12.9-final-0
+##### Test coverage (release 3.0)
+```bash
+___________________________________________________________ coverage: platform linux, python 3.12.9-final-0 ____________________________________________________________
 
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
 setup.py                       10     10     0%
-stellaspark_utils/db.py       195    133    32%
+stellaspark_utils/db.py       196    134    32%
 stellaspark_utils/text.py     110     87    21%
 -----------------------------------------------
-TOTAL                         315    230    27%
+TOTAL                         316    231    27%
 ```
 
 ### Release 

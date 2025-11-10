@@ -143,15 +143,19 @@ def get_constraints(
     sql_where = "" if pk else "and pgc.contype != 'p'"
 
     results = executor.execute(
-        f"select pgc.conname as name, "
-        f"pg_get_constraintdef(pgc.oid) as definition, "
-        f"pgc.contype as type, "
-        f"nullif(split_part(pgc.confrelid::regclass::text, '.',2), '') as table_referenced "
-        f"from pg_constraint pgc "
-        f"join pg_namespace nsp on nsp.oid = pgc.connamespace "
-        f"left join pg_class cls on pgc.conrelid = cls.oid "
-        f"where nspname = %s and relname = %s "
-        f"{sql_where}",
+        "select pgc.conname as name, "
+        "pg_get_constraintdef(pgc.oid) as definition, "
+        "pgc.contype as type, "
+        "array_agg(a.attname order by a.attnum) as col, "
+        "nullif(split_part(pgc.confrelid::regclass::text, '.',2), '') as table_referenced "
+        "from pg_constraint pgc "
+        "join pg_namespace nsp on nsp.oid = pgc.connamespace "
+        "left join pg_class cls on pgc.conrelid = cls.oid "
+        "left join lateral unnest(pgc.conkey) as colnum(attnum) on true "
+        "left join pg_attribute a on a.attrelid = pgc.conrelid and a.attnum = colnum.attnum "
+        "where nspname = %s and relname = %s "
+        f"{sql_where} "
+        "group by pgc.conname, pgc.oid, pgc.contype, cls.relname, pgc.confrelid",
         (schema, table),
     )
     if results is None:
@@ -177,7 +181,7 @@ def get_constraints(
             "    from pg_constraint ) "
             "select c.conname as name, "
             "tbl.relname as table, "
-            "col.attname as col, "
+            "array[col.attname] as col, "
             "pg_get_constraintdef(c.oid) as definition "
             "from pg_constraint c "
             "left join unnested_conkey con on c.oid = con.oid "
@@ -204,6 +208,7 @@ def get_constraints(
         for child_constraint in constraints_children:
             child_constraint["schema"] = schema
             child_constraint["type"] = "f"
+            child_constraint["table_referenced"] = table
             child_constraint["child"] = True
             child_constraint[
                 "definition"

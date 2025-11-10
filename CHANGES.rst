@@ -1,5 +1,6 @@
 ### 2.7 <small> Unreleased </small>
- -
+ - Ensure that 'get_constraints' always outputs the same keys for child and principal constraints
+ - Output key 'col' of 'get_constraints' is now an array to facilitate multi-column constraints
 
 ### 2.6 <small> 2025-05-06 </small>
  - Fix table constraints by preventing duplicate self-referencing foreign keys

@@ -1,5 +1,5 @@
-### 3.1 <small> Unreleased </small>
- -
+### 3.0.1 <small> Unreleased </small>
+ - Update readme
 
  ### 3.0 <small> 2025-10-11 </small>
  - Ensure that 'get_constraints' always outputs the same keys for child and principal constraints

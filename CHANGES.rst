@@ -1,7 +1,8 @@
 ### 3.2 <small> Unreleased </small>
  -
-
+ 
 ### 3.1 <small> 2026-05-22 </small>
+ - Update readme
  - Fix python_requires upper bound from <=3.12.9 to <3.13 to support all Python 3.12 patch releases
 
 ### 3.0 <small> 2025-10-11 </small>

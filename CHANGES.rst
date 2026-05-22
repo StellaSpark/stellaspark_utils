@@ -1,10 +1,14 @@
-### 3.0.1 <small> Unreleased </small>
+### 3.2 <small> Unreleased </small>
+ -
+ 
+### 3.1 <small> 2026-05-22 </small>
  - Update readme
+ - Fix python_requires upper bound from <=3.12.9 to <3.13 to support all Python 3.12 patch releases
 
- ### 3.0 <small> 2025-10-11 </small>
+### 3.0 <small> 2025-10-11 </small>
  - Ensure that 'get_constraints' always outputs the same keys for child and principal constraints
  - Output key 'col' of 'get_constraints' is now an array to facilitate multi-column constraints
-
+ 
 ### 2.6 <small> 2025-05-06 </small>
  - Fix table constraints by preventing duplicate self-referencing foreign keys
 

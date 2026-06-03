@@ -1,6 +1,9 @@
-### 3.2 <small> Unreleased </small>
+### 3.3 <small> Unreleased </small>
  -
- 
+
+### 3.2 <small> 2026-06-03 </small>
+ - Fix broken link to Nexus documentation
+
 ### 3.1 <small> 2026-05-22 </small>
  - Update readme
  - Fix python_requires upper bound from <=3.12.9 to <3.13 to support all Python 3.12 patch releases

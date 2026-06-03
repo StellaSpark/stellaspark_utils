@@ -1,5 +1,5 @@
 [StellaSpark Nexus]:https://www.stellaspark.com/
-[Expert API]:https://nexus.stellaspark.com/docs/expert-api/connecting/
+[Expert API]:https://nexus.stellaspark.com/docs/expert-api/expert-api-basics/
 [PyPI account]:https://pypi.org/account/register/
 
 
@@ -82,17 +82,17 @@ cd <project_root>
 pytest
 ```
 
-##### Test coverage (release 3.1)
+##### Test coverage (release 3.2)
 ```bash
-========================================================== tests coverage ===========================================================
-__________________________________________ coverage: platform linux, python 3.12.9-final-0 __________________________________________
+________________________________ coverage: platform linux, python 3.12.9-final-0 _________________________________
 
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
+setup.py                       10     10     0%
 stellaspark_utils/db.py       196    134    32%
 stellaspark_utils/text.py     110     87    21%
 -----------------------------------------------
-TOTAL                         306    221    28%
+TOTAL                         316    231    27%
 ```
 
 ### Release 

@@ -12,7 +12,8 @@ Compatible with Python 3.7 – 3.12.9.
 
 ## About StellaSpark Nexus
 
-[StellaSpark Nexus] is a digital twin platform that combines geospatial data and time series and turns it into interactive 2D/3D maps, dashboards and a unified API. It is used by governments, NGOs, utilities, contractors, engineers, and technical consultants to unify live data, run operational forecasts and scenario analysis, and share insights across organizations and public stakeholders. It is used in domains such as:
+[StellaSpark Nexus] is a digital twin platform that combines geospatial data and time series and turns it into interactive 2D/3D maps, dashboards and a unified API. 
+It is used by governments, NGOs, utilities, contractors, engineers, and technical consultants to unify live data, run operational forecasts and scenario analysis, and share insights across organizations and public stakeholders. It is used in domains such as:
 
 - Urban planning  
 - Infrastructure and construction  
@@ -21,7 +22,8 @@ Compatible with Python 3.7 – 3.12.9.
 - Mobility and telecommunications
 - Real estate
 
-The platform integrates live data from sensors, virtually all geospatial file formats, databases, and external APIs (REST/WFS/database), enabling monitoring, analysis, simulation, and secure data sharing. This repository contains Python utilities that support those workflows.
+The platform integrates live data from sensors, virtually all geospatial file formats, databases, and external APIs (REST/WFS/database), enabling monitoring, 
+analysis, simulation, and secure data sharing. This repository contains Python utilities that support those workflows.
 
 ## Installation
 
@@ -33,6 +35,7 @@ pip install stellaspark-utils
 ## Usage
 
 ```
+from sqlalchemy import text
 from stellaspark_utils.db import get_indexes, DatabaseManager
 from stellaspark_utils.text import parse_time_placeholders
 
@@ -51,10 +54,12 @@ result = db_manager.execute("<sql_query>").all()
 
 # This is also limited by working memory:
 with db_manager.get_connection() as connection:
-    result = connection.execute("<sql_query>").all()
+    result = connection.execute(text("<sql_query>")).all()
 
-# This SQL transaction is NOT limited by working memory, so please do not use.
-result = db_manager.engine.execute("<sql_query>").all()
+# This SQL transaction is NOT limited by working memory. Only use if you deliberately need to bypass the
+# work_mem cap:
+with db_manager.engine.connect() as connection:
+    result = connection.execute(text("<sql_query>")).all()
 ```
 
 ## Development
@@ -82,17 +87,21 @@ cd <project_root>
 pytest
 ```
 
-##### Test coverage (release 3.2)
+##### Test coverage (release 4.0)
 ```bash
-________________________________ coverage: platform linux, python 3.12.9-final-0 _________________________________
+========================================================== tests coverage ===========================================================
+__________________________________________ coverage: platform linux, python 3.12.9-final-0 __________________________________________
 
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
 setup.py                       10     10     0%
-stellaspark_utils/db.py       196    134    32%
+stellaspark_utils/db.py       177    112    37%
 stellaspark_utils/text.py     110     87    21%
 -----------------------------------------------
-TOTAL                         316    231    27%
+TOTAL                         297    209    30%
+
+1 empty file skipped.
+=================================================== 3 passed, 1 warning in 2.23s ====================================================
 ```
 
 ### Release 

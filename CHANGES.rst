@@ -1,5 +1,16 @@
-### 3.3 <small> Unreleased </small>
+### 4.1 <small> Unreleased </small>
  -
+
+### 4.0 <small> 2026-08-04 </small>
+ - **Breaking:** Require sqlalchemy 2.0 or higher
+ - **Breaking:** db.py helper functions (get_indexes, create_index, get_constraints, get_dependent_views,
+   get_dependent_matviews, get_privileges, get_clustered_tables) now only accept a sqlalchemy Connection as
+   their 'executor' argument (e.g. from `DatabaseManager.get_connection()`); a bare Engine or raw DBAPI
+   cursor (Django, psycopg2) is no longer supported
+ - Rename get_dependent_views()'s 'engine' parameter to 'executor', matching the rest of db.py
+ - Fix get_privileges() passing unused arguments to a query that didn't need them
+ - DatabaseManager.execute() now always converts plain SQL strings to text() internally
+ - Raise supported Python range from 3.7-3.12 to 3.7-3.14, now that sqlalchemy 2.0 no longer caps it
 
 ### 3.2 <small> 2026-06-03 </small>
  - Fix broken link to Nexus documentation

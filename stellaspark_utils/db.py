@@ -18,11 +18,9 @@ import sqlalchemy
 
 logger = logging.getLogger(__name__)
 
-ExecutorType = Union[Engine, Connection]
-
 
 def get_indexes(
-    executor: ExecutorType,
+    executor: Connection,
     schema: str,
     table: str,
     pk: bool = True,
@@ -30,7 +28,7 @@ def get_indexes(
 ) -> List[Dict]:
     """Return a list of dicts, each dict indicating the index name and definition.
 
-    Args: executor : Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Returns a list of dicts, each dict being an index with its details
     """
     sql_filter = ""
@@ -40,25 +38,20 @@ def get_indexes(
     if not unique:
         sql_filter = sql_filter + " and indexdef not ilike '%% unique index %%'"
 
-    results = executor.execute(
+    results = executor.exec_driver_sql(
         f"select indexname as name, indexdef as definition "
         f"from pg_indexes "
         f"where schemaname = %s and tablename = %s {sql_filter}",
         (schema, table),
     )
 
-    if results is None:
-        # Python DBAPI Cursor object (Django, Psycopg2)
-        indexes = [dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()]
-    else:
-        # Database connection or engine-based query (SQLAlchemy)
-        indexes = [dict(row) for row in results.fetchall()]
+    indexes = [dict(row._mapping) for row in results.fetchall()]
 
     return indexes
 
 
 def create_index(
-    executor: ExecutorType,
+    executor: Connection,
     schema: str,
     table: str,
     col: Union[str, List],
@@ -68,7 +61,7 @@ def create_index(
 ) -> None:
     """Create (spatial or non-spatial) indexes on a set of columns in table.
 
-    Args: executor : Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Argument 'col' may be a str, list of str or list of lists
     """
     assert method in (
@@ -100,14 +93,18 @@ def create_index(
             if max_maintenance_work_mem:
                 assert isinstance(max_maintenance_work_mem, int) and max_maintenance_work_mem > 0
                 # Increase working memory to speed up process. Add the end of this function we reset it to original
-                executor.execute(f"set maintenance_work_mem = '{max_maintenance_work_mem}'")
+                executor.exec_driver_sql(f"set maintenance_work_mem = '{max_maintenance_work_mem}'")
             try:
                 logger.info(f"Add index to {schema}.{table} for column(s) {','.join(col_in)}")
                 if method == "auto":
-                    executor.execute(f"create index {q(index_name)} on {schema}.{q(table)}({','.join(q(col_in))})")
+                    executor.exec_driver_sql(
+                        f"create index {q(index_name)} on {schema}.{q(table)}({','.join(q(col_in))})"
+                    )
                 elif method == "gist":
                     sql_col_in = f"st_transform({q(col_in[0])}, {srid})" if srid else q(col_in[0])
-                    executor.execute(f"create index {q(index_name)} on {schema}.{q(table)} using gist ({sql_col_in})")
+                    executor.exec_driver_sql(
+                        f"create index {q(index_name)} on {schema}.{q(table)} using gist ({sql_col_in})"
+                    )
                 index_created = True
             except OperationalError:
                 logger.warning(
@@ -117,19 +114,18 @@ def create_index(
                 index_created = False
 
     if index_created:
-        # Vacuum table to update query planner
-        connection = executor.raw_connection()
-        old_isolation_level = connection.isolation_level
-        connection.set_isolation_level(0)
-        cursor = connection.cursor()
-        cursor.execute(f"vacuum analyze {schema}.{q(table)}")
-        connection.set_isolation_level(old_isolation_level)
+        # Vacuum table to update query planner. VACUUM cannot run inside a transaction block, and 'executor' may
+        # already have an open (autobegun) transaction from the statements above, so we check out a second,
+        # independent connection from the same pool in AUTOCOMMIT mode rather than touching executor's isolation
+        # level directly.
+        with executor.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as vacuum_connection:
+            vacuum_connection.exec_driver_sql(f"vacuum analyze {schema}.{q(table)}")
 
-    executor.execute("reset maintenance_work_mem")
+    executor.exec_driver_sql("reset maintenance_work_mem")
 
 
 def get_constraints(
-    executor: ExecutorType,
+    executor: Connection,
     schema: str,
     table: str,
     pk: bool = True,
@@ -137,12 +133,12 @@ def get_constraints(
 ) -> List[Dict]:
     """Return a list of dicts, each dict indicating the constraint name, type, definition etc.
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Returns a list of dicts, each dict being a constraint with its details
     """
     sql_where = "" if pk else "and pgc.contype != 'p'"
 
-    results = executor.execute(
+    results = executor.exec_driver_sql(
         "select pgc.conname as name, "
         "pg_get_constraintdef(pgc.oid) as definition, "
         "pgc.contype as type, "
@@ -158,12 +154,7 @@ def get_constraints(
         "group by pgc.conname, pgc.oid, pgc.contype, cls.relname, pgc.confrelid",
         (schema, table),
     )
-    if results is None:
-        # Python DBAPI Cursor object (Django, Psycopg2)
-        constraints = [dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()]
-    else:
-        # Database connection or engine-based query (SQLAlchemy)
-        constraints = [dict(row) for row in results.fetchall()]
+    constraints = [dict(row._mapping) for row in results.fetchall()]
 
     for constraint in constraints:
         constraint["schema"] = schema
@@ -172,7 +163,7 @@ def get_constraints(
         constraint["definition"] = f"alter table {schema}.{q(table)} add {constraint['definition']}"
 
     if child_fks:
-        results = executor.execute(
+        results = executor.exec_driver_sql(
             "with unnested_confkey as ( "
             "    select oid, unnest(confkey) as confkey "
             "    from pg_constraint), "
@@ -196,14 +187,7 @@ def get_constraints(
             "and tbl.relname != %s",  # Exclude self-referencing foreign keys, those are already part of previous query
             (schema, table, table),
         )
-        if results is None:
-            # Python DBAPI Cursor object (Django, Psycopg2)
-            constraints_children = [
-                dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()
-            ]
-        else:
-            # Database connection or engine-based query (SQLAlchemy)
-            constraints_children = [dict(row) for row in results.fetchall()]
+        constraints_children = [dict(row._mapping) for row in results.fetchall()]
 
         for child_constraint in constraints_children:
             child_constraint["schema"] = schema
@@ -219,13 +203,13 @@ def get_constraints(
     return constraints
 
 
-def get_dependent_views(engine: ExecutorType, schema: str, table: str) -> List[Dict]:
+def get_dependent_views(executor: Connection, schema: str, table: str) -> List[Dict]:
     """Get all views that depend on this table.
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Returns a list of dicts, each dict being a view with its details
     """
-    results = engine.execute(
+    results = executor.exec_driver_sql(
         "select distinct on (objid) objid, "
         "dependent_view.relname as name, "
         "dependent_ns.nspname as schema, "
@@ -245,12 +229,7 @@ def get_dependent_views(engine: ExecutorType, schema: str, table: str) -> List[D
         (schema, table),
     )
 
-    if results is None:
-        # Python DBAPI Cursor object (Django, Psycopg2)
-        dependent_views = [dict(zip([col[0] for col in engine.description], row)) for row in engine.fetchall()]
-    else:
-        # Database connection or engine-based query (SQLAlchemy)
-        dependent_views = [dict(row) for row in results.fetchall()]
+    dependent_views = [dict(row._mapping) for row in results.fetchall()]
 
     for view in dependent_views:
         view.pop("objid", None)
@@ -259,24 +238,19 @@ def get_dependent_views(engine: ExecutorType, schema: str, table: str) -> List[D
     return dependent_views
 
 
-def get_dependent_matviews(executor: ExecutorType, schema: str, table: str) -> List[Dict]:
+def get_dependent_matviews(executor: Connection, schema: str, table: str) -> List[Dict]:
     """Get all materialized views that depend on this table.
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Returns a list of dicts, each dict being a dependent materialized view with its details
     """
-    results = executor.execute(
+    results = executor.exec_driver_sql(
         f"select matviewname as name, schemaname as schema, definition "
         f"from pg_matviews "
         f"where definition ilike '%%{schema}.{table}%%'"
     )
 
-    if results is None:
-        # Python DBAPI Cursor object (Django, Psycopg2)
-        dependent_matviews = [dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()]
-    else:
-        # Database connection or engine-based query (SQLAlchemy)
-        dependent_matviews = [dict(row) for row in results.fetchall()]
+    dependent_matviews = [dict(row._mapping) for row in results.fetchall()]
 
     for matview in dependent_matviews:
         matview[
@@ -286,26 +260,20 @@ def get_dependent_matviews(executor: ExecutorType, schema: str, table: str) -> L
     return dependent_matviews
 
 
-def get_privileges(executor: ExecutorType, schema: str, table: str) -> List[Dict]:
+def get_privileges(executor: Connection, schema: str, table: str) -> List[Dict]:
     """List user privileges on table.
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Returns a list of dicts, each dict being a privilege with its details
     """
-    results = executor.execute(
+    results = executor.exec_driver_sql(
         f"select grantee, privilege_type as name "
         f"from information_schema.role_table_grants "
         f"where table_schema = '{schema}' "
-        f"and table_name = '{table}'",
-        (schema, table),
+        f"and table_name = '{table}'"
     )
 
-    if results is None:
-        # Python DBAPI Cursor object (Django, Psycopg2)
-        privileges = [dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()]
-    else:
-        # Database connection or engine-based query (SQLAlchemy)
-        privileges = [dict(row) for row in results.fetchall()]
+    privileges = [dict(row._mapping) for row in results.fetchall()]
 
     for privilege in privileges:
         privilege["definition"] = f"grant {privilege['name']} on table {schema}.{q(table)} to {q(privilege['grantee'])}"
@@ -313,15 +281,15 @@ def get_privileges(executor: ExecutorType, schema: str, table: str) -> List[Dict
     return privileges
 
 
-def get_columns(executor: ExecutorType, schema: str, table: str, name: str = None) -> List[str]:
+def get_columns(executor: Connection, schema: str, table: str, name: str = None) -> List[str]:
     """Get all column names of table in schema.
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     """
     if name:
         if "%" in name:
             name = name.replace("%", "%%").replace(
-                "_", "\_"  # noqa
+                "_", r"\_"
             )  # Double percent-signs for proper escaping in SQLAlchemy, escape underscore with backslash
             name_filter = f"and column_name like '{name}'"
         else:
@@ -339,10 +307,10 @@ def get_columns(executor: ExecutorType, schema: str, table: str, name: str = Non
     return [col[0] for col in cols]
 
 
-def get_tables(executor: ExecutorType, schema: str, name: str = None, unlogged: bool = None) -> List[str]:
+def get_tables(executor: Connection, schema: str, name: str = None, unlogged: bool = None) -> List[str]:
     """Return tables (including foreign tables).
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Argument 'name': optionally filter on table name
     Argument 'unlogged': optionally filter on unlogged:
         - True: only return unlogged tables
@@ -362,7 +330,7 @@ def get_tables(executor: ExecutorType, schema: str, name: str = None, unlogged: 
         name_filter_foreign = ""
 
     # Ensure that we don't get any views (explicitly call for table type 'BASE TABLE')
-    tables = executor.execute(
+    tables = executor.exec_driver_sql(
         f"select table_name "
         f"from information_schema.tables "
         f"where table_schema = '{schema}' "
@@ -371,7 +339,7 @@ def get_tables(executor: ExecutorType, schema: str, name: str = None, unlogged: 
 
     if tables and unlogged is not None:
         sql_in = ",".join([f"'{table[0]}'" for table in tables])
-        tables = executor.execute(
+        tables = executor.exec_driver_sql(
             f"select relname "
             f"from pg_class "
             f"where relname in ({sql_in}) "
@@ -381,7 +349,7 @@ def get_tables(executor: ExecutorType, schema: str, name: str = None, unlogged: 
 
     if unlogged is None:
         # Add foreign tables (these don't have a logged property and can therefore not be filtered on 'unlogged' status)
-        tables_foreign = executor.execute(
+        tables_foreign = executor.exec_driver_sql(
             f"select foreign_table_name "
             f"from information_schema.foreign_tables "
             f"where foreign_table_schema = '{schema}' {name_filter_foreign}"
@@ -391,13 +359,13 @@ def get_tables(executor: ExecutorType, schema: str, name: str = None, unlogged: 
     return [table[0] for table in tables]
 
 
-def get_clustered_tables(executor: ExecutorType) -> List[Dict]:
+def get_clustered_tables(executor: Connection) -> List[Dict]:
     """Get a list of all clustered tables.
 
-    Args: executor: Engine, Connection (SQLAlchemy) or DBAPI-like Cursor (Psycopg2, Django)
+    Args: executor: sqlalchemy.engine.Connection
     Returns a list of dicts, each dict being a clustered table with its details
     """
-    results = executor.execute(
+    results = executor.exec_driver_sql(
         "select n.nspname as schema, c.relname as table, split_part(indexrelid::regclass::text, '.', 2) as index "
         "from pg_class c "
         "join pg_namespace n "
@@ -408,12 +376,7 @@ def get_clustered_tables(executor: ExecutorType) -> List[Dict]:
         "and i.indisclustered = 't'"
     )
 
-    if results is None:
-        # Python DBAPI Cursor object (Django, Psycopg2)
-        clustered_tables = [dict(zip([col[0] for col in executor.description], row)) for row in executor.fetchall()]
-    else:
-        # Database connection or engine-based query (SQLAlchemy)
-        clustered_tables = [dict(row) for row in results.fetchall()]
+    clustered_tables = [dict(row._mapping) for row in results.fetchall()]
 
     for table in clustered_tables:
         table["definition"] = f"alter table {table['schema']}.{q(table['table'])} cluster on {table['index']}"
@@ -435,14 +398,16 @@ class DatabaseManager:
     >>> db_manager = DatabaseManager(db_settings=db_settings, max_mb_mem_per_db_worker=64, engine_pool_size=2)
 
     # This sql transaction is limited by working memory (max_mb_mem_per_db_worker):
-    >>> result = db_manager.execute(text"<sql_query>")).all()
+    >>> result = db_manager.execute("<sql_query>").all()
 
     # This is also limited by working memory:
     >>> with db_manager.get_connection() as connection:
-    >>>     result = connection.execute(text()"<sql_query>")).all()
+    >>>     result = connection.execute(text("<sql_query>")).all()
 
-    # This sql transaction is NOT limited by working memory, so please do not use.
-    >>> result = db_manager.engine.execute(text("<sql_query>")).all()
+    # This sql transaction is NOT limited by working memory. Only use if you deliberately need to bypass the
+    # work_mem cap, since Engine.execute() no longer exists in SQLAlchemy 2.0.
+    >>> with db_manager.engine.connect() as connection:
+    >>>     result = connection.execute(text("<sql_query>")).all()
     """
 
     def __init__(
@@ -484,7 +449,7 @@ class DatabaseManager:
         """Execute raw SQL queries directly on the database with limited working memory."""
         with self.get_connection() as connection:
             try:
-                return connection.execute(sql)
+                return connection.execute(self._ensure_sql_is_text(sql))
             except Exception as err:
                 msg = f"Could not execute sql '{sql}' with limited working memory '{self.max_memory_mb}MB'. err={err}"
                 raise AssertionError(msg)

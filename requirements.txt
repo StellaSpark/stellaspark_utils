@@ -1,4 +1,4 @@
 pytz
 unidecode
-sqlalchemy<2.0  # Use sqlalchemy <2.0 to avoid mandatory use of a text(<sql>)
+sqlalchemy>=2.0,<3.0
 psycopg2-binary

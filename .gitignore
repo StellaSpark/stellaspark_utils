@@ -1,5 +1,20 @@
+*devcontainer-lock.json
+
 # keep all (empty) directories with a .gitkeep file
 !.gitkeep
+
+# Claude
+# Ignore all CLAUDE.md files...
+CLAUDE.md
+# ...except the one in the repo root
+!/CLAUDE.md
+# Ignore Claude Code's per-project config/settings directory...
+*.claude/
+# ...except the repo-root settings.json, which is checked in so every developer/devcontainer gets the same permission rules (e.g. denying access to .env). 
+# Note that settings.local.json (personal overrides) stays ignored.
+!/.claude/
+/.claude/*
+!/.claude/settings.json
 
 # Build distribution side-products
 MANIFEST

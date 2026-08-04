@@ -9,12 +9,8 @@ import requests
 
 
 def _get_db_settings() -> Dict:
-    r = requests.post(
-        "https://nexus.stellaspark.com/api/v1/users/user/expert_credentials/",
-        headers={"authorization": f"Token {os.environ['TOKEN']}"},
-        timeout=10,
-    )
-
+    token = os.environ["WEB_API_TOKEN"]
+    r = requests.post(f"https://nexus.stellaspark.com/api/v1/users/user/expert_credentials/?token={token}")
     r.raise_for_status()
     credentials = r.json()
     # ACCESS_KEY_ID = credentials["access_key_id"]
@@ -40,7 +36,6 @@ def test_db_manager():
     # Test invalid sql
     with pytest.raises(AssertionError) as err:
         db.execute(text("bla")).all()
-        a = err
     err_msg = err.value.args[0]
     assert err_msg.startswith("Could not execute sql 'bla' with limited working memory '128MB'")
 
@@ -55,9 +50,5 @@ def test_db_manager():
 
     # This is also limited by working memory:
     with db.get_connection() as connection:
-        sandbox_roads_exist = connection.execute(sql_sandbox_roads_exist).all()
+        sandbox_roads_exist = connection.execute(text(sql_sandbox_roads_exist)).all()
         assert sandbox_roads_exist
-
-    # This sql transaction is NOT limited by working memory, so please do not use.
-    sandbox_roads_exist = db.engine.execute(sql_sandbox_roads_exist).all()
-    assert sandbox_roads_exist

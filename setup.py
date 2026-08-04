@@ -10,17 +10,9 @@ readme_md_path = Path(".").resolve() / "README.md"
 with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-version = "3.2"
+version = "4.0"
 
-# Use sqlalchemy <2.0 to avoid mandatory use of a text(<sql>). Only the last sqlalchymy version
-# before 2.0 (version 1.4.49) can work with python 3.12.9 (so python 3.12 is included below).
-install_requires = ["pytz", "unidecode", "sqlalchemy<2.0", "psycopg2-binary"]
-tests_requires = [
-    "pytest",
-    "pytest-cov",
-    "python-dotenv",
-    "requests",
-]
+install_requires = ["pytz", "unidecode", "sqlalchemy>=2.0,<3.0", "psycopg2-binary"]
 
 setup(
     name="stellaspark_utils",
@@ -38,16 +30,13 @@ setup(
     download_url=f"https://github.com/StellaSpark/stellaspark_utils/archive/v{version}.tar.gz",
     keywords=["stellaspark", "nexus", "utils", "calculation", "python"],
     zip_safe=False,
-    python_requires=">=3.7,<3.13",
+    python_requires=">=3.7,<3.15",
     install_requires=install_requires,
-    tests_require=tests_requires,
-    extras_require={"test": tests_requires},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
@@ -56,6 +45,8 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Topic :: Software Development :: Build Tools",
     ],
 )

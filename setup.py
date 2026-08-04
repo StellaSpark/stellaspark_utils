@@ -36,7 +36,7 @@ setup(
     download_url=f"https://github.com/StellaSpark/stellaspark_utils/archive/v{version}.tar.gz",
     keywords=["stellaspark", "nexus", "utils", "calculation", "python"],
     zip_safe=False,
-    python_requires=">=3.7,<3.13",
+    python_requires=">=3.7,<3.15",
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require={"test": tests_requires},
@@ -54,6 +54,8 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Topic :: Software Development :: Build Tools",
     ],
 )

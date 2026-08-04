@@ -1,16 +1,16 @@
-### 4.0 <small> Unreleased </small>
- - **Breaking:** This package now requires sqlalchemy version 2.0 or higher (sqlalchemy versions below 2.0 are
-   no longer supported)
- - **Breaking:** The db.py helper functions (get_indexes, create_index, get_constraints, get_dependent_views,
-   get_dependent_matviews, get_privileges, get_clustered_tables) used to accept different kinds of database
-   connections as their 'executor' argument. Now they only accept a sqlalchemy Connection object (for example,
-   the one you get from `DatabaseManager.get_connection()`). Passing a sqlalchemy Engine directly, or a raw
-   database cursor (as used by Django or psycopg2), is no longer supported
- - Renamed the 'engine' parameter of get_dependent_views() to 'executor', to match the naming used in all the
-   other db.py functions
- - Fixed a small bug in get_privileges() where unused arguments were being passed to a query that didn't need them
- - DatabaseManager.execute() now always converts plain SQL strings to the sqlalchemy text() format internally,
-   so you can keep passing plain strings the way you already did
+### 4.1 <small> Unreleased </small>
+ -
+
+### 4.0 <small> 2026-08-04 </small>
+ - **Breaking:** Require sqlalchemy 2.0 or higher
+ - **Breaking:** db.py helper functions (get_indexes, create_index, get_constraints, get_dependent_views,
+   get_dependent_matviews, get_privileges, get_clustered_tables) now only accept a sqlalchemy Connection as
+   their 'executor' argument (e.g. from `DatabaseManager.get_connection()`); a bare Engine or raw DBAPI
+   cursor (Django, psycopg2) is no longer supported
+ - Rename get_dependent_views()'s 'engine' parameter to 'executor', matching the rest of db.py
+ - Fix get_privileges() passing unused arguments to a query that didn't need them
+ - DatabaseManager.execute() now always converts plain SQL strings to text() internally
+ - Raise supported Python range from 3.7-3.12 to 3.7-3.14, now that sqlalchemy 2.0 no longer caps it
 
 ### 3.2 <small> 2026-06-03 </small>
  - Fix broken link to Nexus documentation

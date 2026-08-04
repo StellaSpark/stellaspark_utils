@@ -7,7 +7,7 @@
 
 Python utilities supporting [Expert API] integrations with **[StellaSpark Nexus]**, a real-time digital twin platform for monitoring and simulating the natural and built environment. These utilities are primarily intended for calculations, data pipelines, and automation workflows that interact with Nexus on a database-level.
 
-Compatible with Python 3.7 – 3.12.9.
+Compatible with Python 3.7 – 3.14.
 
 
 ## About StellaSpark Nexus

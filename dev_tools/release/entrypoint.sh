@@ -14,7 +14,6 @@ twine check dist/*
 echo "-----------------------------------------------------------------------------------------------------------"
 echo "Uploading distribution to PyPI"
 echo "-----------------------------------------------------------------------------------------------------------"
-echo "You will be prompted for a username and password:"
-echo "- for the username, use __token__ (yes literally '__token__')"
-echo "- for the password, use the PyPI token value, including the 'pypi-' prefix"
+echo "You will be prompted for a password. Use the PyPI token value, including the 'pypi-' prefix"
+# echo "- for the username, use __token__ (yes literally '__token__')"
 twine upload dist/*

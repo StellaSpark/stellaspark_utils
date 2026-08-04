@@ -8,10 +8,13 @@
 		"stellaspark_utils"
 	],
 	"workspaceFolder": "/workspaces",
-	
+
+	"postCreateCommand": "pip-audit -r requirements.txt -r requirements_dev.txt -r requirements_test.txt",
+
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
-		"ghcr.io/devcontainers/features/git:1": {}
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
 	},
 	
 	// Tool-specific properties.

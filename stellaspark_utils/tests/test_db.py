@@ -9,7 +9,7 @@ import requests
 
 
 def _get_db_settings() -> Dict:
-    token = os.environ["TOKEN"]
+    token = os.environ["WEB_API_TOKEN"]
     r = requests.post(f"https://nexus.stellaspark.com/api/v1/users/user/expert_credentials/?token={token}")
     r.raise_for_status()
     credentials = r.json()

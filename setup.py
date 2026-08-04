@@ -13,12 +13,6 @@ with open(readme_md_path.as_posix(), encoding="utf-8") as f:
 version = "4.0"
 
 install_requires = ["pytz", "unidecode", "sqlalchemy>=2.0,<3.0", "psycopg2-binary"]
-tests_requires = [
-    "pytest",
-    "pytest-cov",
-    "python-dotenv",
-    "requests",
-]
 
 setup(
     name="stellaspark_utils",
@@ -38,14 +32,11 @@ setup(
     zip_safe=False,
     python_requires=">=3.7,<3.15",
     install_requires=install_requires,
-    tests_require=tests_requires,
-    extras_require={"test": tests_requires},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",

@@ -1,3 +1,4 @@
 black           # used for autoformat code
 isort           # used for autoformat code
 flake8          # used for autoformat code
+pip-audit       # used to scan dependencies for known vulnerabilities

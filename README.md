@@ -64,7 +64,7 @@ with db_manager.engine.connect() as connection:
 
 ## Development
 
-### Build using command line
+### Build devcontainer image
 ```
 cd <project_root>
 docker-compose build stellaspark_utils
@@ -86,6 +86,8 @@ make_nice
 cd <project_root>
 pytest
 ```
+Runs the test suite in Docker against every Python version listed in setup.py's classifiers (3.7 – 3.14). Requires a
+`.env` file in the project root providing `WEB_API_TOKEN`, `DB_USER` and `DB_PASSWORD`, used by the database tests.
 
 ##### Test coverage (release 4.0)
 ```bash
@@ -113,16 +115,11 @@ TOTAL                         297    209    30%
 4. Optionally, autoformat code (see above)
 5. Push changes to GitHub (preferably in a branch 'release_<x>_<y>')
 
-##### Release manually
+##### Release steps
 ```
 cd <project_root>
-rmdir /s /q "dist"                                      # Remove dist dir (to avoid uploading old distributions)                       
-pipenv shell                                            # Activate pipenv environnment (see 'Create an environment' above)
-pip install twine                                       # Install twine (to upload package to PyPI)
-python setup.py sdist                                   # Create distribution (with a '.tar.gz' in it)
-twine check dist/*                                      # Validate all distibutions in stellaspark_utils/dist
-twine upload dist/*                                     # Upload distribution to pypi.org
-# You will be prompted for a username and password: 
-# - for the username, use __token__ (yes literally '__token__')
-# - for the password, use the PyPI token value, including the 'pypi-' prefix
+make_nice
+pytest              # Test against every Python version listed in setup.py's classifiers
+build               # Runs pip-audit
+release             # When prompted, username = __token__ (yes literally '__token__'), password = PyPI token value (including the 'pypi-' prefix)
 ```

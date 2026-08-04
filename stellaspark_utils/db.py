@@ -289,7 +289,7 @@ def get_columns(executor: Connection, schema: str, table: str, name: str = None)
     if name:
         if "%" in name:
             name = name.replace("%", "%%").replace(
-                "_", "\_"  # noqa
+                "_", r"\_"
             )  # Double percent-signs for proper escaping in SQLAlchemy, escape underscore with backslash
             name_filter = f"and column_name like '{name}'"
         else:

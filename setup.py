@@ -2,7 +2,6 @@ from pathlib import Path
 from setuptools import find_packages
 from setuptools import setup
 
-
 # Read the contents of your README file
 readme_md_path = Path(".").resolve() / "README.md"
 
@@ -10,7 +9,7 @@ readme_md_path = Path(".").resolve() / "README.md"
 with open(readme_md_path.as_posix(), encoding="utf-8") as f:
     long_description = f.read()
 
-version = "4.0"
+version = "4.1"
 
 install_requires = ["pytz", "unidecode", "sqlalchemy>=2.0,<3.0", "psycopg2-binary"]
 

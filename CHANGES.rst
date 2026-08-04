@@ -1,5 +1,10 @@
-### 4.1 <small> Unreleased </small>
+### 4.2 <small> Unreleased </small>
  -
+
+### 4.1 <small> 2026-08-04 </small>
+ - Fix security vulnerabilities in the code-formatting developer tooling (black, pip, setuptools, wheel,
+   zipp) by upgrading pinned tool versions; this only affects the internal formatting/linting workflow, not
+   the published library
 
 ### 4.0 <small> 2026-08-04 </small>
  - **Breaking:** Require sqlalchemy 2.0 or higher

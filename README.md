@@ -100,5 +100,5 @@ cd <project_root>
 make_nice           # Autoformat python code
 pytest              # Test against every Python version listed in setup.py's classifiers
 build               # Runs pip-audit
-release             # When prompted, username = __token__ (yes literally '__token__'), password = PyPI token value (including the 'pypi-' prefix)
+release             # When prompted for password use your PyPI token including the 'pypi-' prefix
 ```

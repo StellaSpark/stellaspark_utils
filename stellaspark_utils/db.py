@@ -15,7 +15,6 @@ from typing import Union
 import logging
 import sqlalchemy
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -194,9 +193,9 @@ def get_constraints(
             child_constraint["type"] = "f"
             child_constraint["table_referenced"] = table
             child_constraint["child"] = True
-            child_constraint[
-                "definition"
-            ] = f"alter table {schema}.{child_constraint['table']} add {child_constraint['definition']}"
+            child_constraint["definition"] = (
+                f"alter table {schema}.{child_constraint['table']} add {child_constraint['definition']}"
+            )
 
         constraints = constraints + constraints_children
 
@@ -253,9 +252,9 @@ def get_dependent_matviews(executor: Connection, schema: str, table: str) -> Lis
     dependent_matviews = [dict(row._mapping) for row in results.fetchall()]
 
     for matview in dependent_matviews:
-        matview[
-            "definition"
-        ] = f"create materialized view {matview['schema']}.{matview['name']} as {matview['definition']}"
+        matview["definition"] = (
+            f"create materialized view {matview['schema']}.{matview['name']} as {matview['definition']}"
+        )
 
     return dependent_matviews
 

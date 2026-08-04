@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 from stellaspark_utils.text import q
 from stellaspark_utils.text import sq
 
-
 load_dotenv()
 
 

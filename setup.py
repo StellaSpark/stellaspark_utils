@@ -2,7 +2,6 @@ from pathlib import Path
 from setuptools import find_packages
 from setuptools import setup
 
-
 # Read the contents of your README file
 readme_md_path = Path(".").resolve() / "README.md"
 

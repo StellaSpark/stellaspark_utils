@@ -9,6 +9,7 @@ from sqlalchemy.sql.elements import TextClause
 from stellaspark_utils.text import make_identifier
 from stellaspark_utils.text import q
 from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Union
 
@@ -49,6 +50,18 @@ def get_indexes(
     return indexes
 
 
+@contextmanager
+def autocommit_connection(engine: Engine) -> Iterator[Connection]:
+    """Get a connection from 'engine' with no open transaction (autocommit mode).
+
+    Required for calling create_index() on a connection that may create a new index: create_index() then
+    needs to VACUUM ANALYZE the table on a second connection, which deadlocks if 'executor' still has an
+    open transaction holding a lock on that table (see create_index()'s docstring).
+    """
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        yield conn
+
+
 def create_index(
     executor: Connection,
     schema: str,
@@ -60,7 +73,10 @@ def create_index(
 ) -> None:
     """Create (spatial or non-spatial) indexes on a set of columns in table.
 
-    Args: executor: sqlalchemy.engine.Connection
+    Args: executor: sqlalchemy.engine.Connection, must be an autocommit connection (e.g. from
+    autocommit_connection(engine), not engine.begin()): whenever a new index is actually created, this
+    function also runs VACUUM ANALYZE on the table on a second connection, which deadlocks against a lock
+    still held by 'executor' if it isn't autocommit.
     Argument 'col' may be a str, list of str or list of lists
     """
     assert method in (
@@ -113,11 +129,15 @@ def create_index(
                 index_created = False
 
     if index_created:
-        # Vacuum table to update query planner. VACUUM cannot run inside a transaction block, and 'executor' may
-        # already have an open (autobegun) transaction from the statements above, so we check out a second,
-        # independent connection from the same pool in AUTOCOMMIT mode rather than touching executor's isolation
-        # level directly.
-        with executor.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as vacuum_connection:
+        assert executor.get_execution_options().get("isolation_level") == "AUTOCOMMIT", (
+            "create_index() created a new index and must now VACUUM ANALYZE on a separate connection, but "
+            "'executor' is not an autocommit connection, so it may still hold a lock (from an open or "
+            "autobegun transaction) that would deadlock against that VACUUM. Pass an executor connection "
+            "from autocommit_connection(engine), not one from engine.begin()."
+        )
+        # Vacuum table to update query planner. VACUUM cannot run inside a transaction block, so we check out a
+        # second, independent connection from the same pool in AUTOCOMMIT mode.
+        with autocommit_connection(executor.engine) as vacuum_connection:
             vacuum_connection.exec_driver_sql(f"vacuum analyze {schema}.{q(table)}")
 
     executor.exec_driver_sql("reset maintenance_work_mem")

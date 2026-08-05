@@ -1,5 +1,10 @@
-### 4.2 <small> Unreleased </small>
+### 4.3 <small> Unreleased </small>
  -
+
+### 4.2 <small> 2026-08-05 </small>
+ - Fix create_index() occasionally hanging and then failing with a closed-connection error when called on
+   a connection that still had an open transaction; it now raises a clear error immediately instead, and a
+   new autocommit_connection() helper is available for calling it safely
 
 ### 4.1 <small> 2026-08-04 </small>
  - Fix security vulnerabilities in the code-formatting developer tooling (black, pip, setuptools, wheel,

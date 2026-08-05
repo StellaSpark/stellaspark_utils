@@ -1,6 +1,9 @@
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
+from stellaspark_utils.db import autocommit_connection
+from stellaspark_utils.db import create_index
 from stellaspark_utils.db import DatabaseManager
+from stellaspark_utils.db import get_indexes
 from typing import Dict
 
 import os
@@ -52,3 +55,31 @@ def test_db_manager():
     with db.get_connection() as connection:
         sandbox_roads_exist = connection.execute(text(sql_sandbox_roads_exist)).all()
         assert sandbox_roads_exist
+
+
+def test_create_index():
+    db_settings = _get_db_settings()
+    db = DatabaseManager(db_settings=db_settings, max_mb_mem_per_db_worker=128, engine_pool_size=2)
+    schema, table = "sandbox", "test_create_index_tmp"
+
+    with autocommit_connection(db.engine) as conn:
+        conn.exec_driver_sql(f"drop table if exists {schema}.{table}")
+        conn.exec_driver_sql(f"create table {schema}.{table} (id integer, col_a integer, col_b integer)")
+
+    try:
+        # create_index() on a connection with an open transaction must raise immediately instead of
+        # deadlocking against the VACUUM ANALYZE it runs whenever it actually creates a new index.
+        with db.get_connection() as connection:
+            with pytest.raises(AssertionError):
+                create_index(connection, schema, table, "col_a")
+
+        # An autocommit connection releases the create-index lock immediately, so create_index() can safely
+        # VACUUM ANALYZE afterwards without deadlocking.
+        with autocommit_connection(db.engine) as connection:
+            create_index(connection, schema, table, "col_b")
+
+            indexes = [index["name"] for index in get_indexes(connection, schema, table, pk=False)]
+            assert "test_create_index_tmp_col_b_idx" in indexes
+    finally:
+        with autocommit_connection(db.engine) as conn:
+            conn.exec_driver_sql(f"drop table if exists {schema}.{table}")

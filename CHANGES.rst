@@ -1,7 +1,11 @@
-### 4.4 <small> Unreleased </small>
+### 4.5 <small> Unreleased </small>
  -
 
-### 4.3 <small> Unreleased </small>
+### 4.4 <small> 2026-08-06 </small>
+ - create_index()'s error for a non-autocommit connection now includes a short code example showing the fix
+ - create_index() now checks upfront that its connection is in autocommit mode, instead of only failing partway through creating indexes
+
+### 4.3 <small> 2026-08-06 </small>
  - create_index() now also accepts a database engine directly and accepts 'MB'/'KB' string for max_maintenance_work_mem
 
 ### 4.2 <small> 2026-08-05 </small>

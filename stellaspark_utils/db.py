@@ -63,26 +63,58 @@ def autocommit_connection(engine: Engine) -> Iterator[Connection]:
 
 
 def create_index(
-    executor: Connection,
+    executor: Union[Engine, Connection],
     schema: str,
     table: str,
     col: Union[str, List],
     method: str = "auto",
     srid: int = None,
-    max_maintenance_work_mem: int = None,
+    max_maintenance_work_mem: Union[int, str] = None,
 ) -> None:
     """Create (spatial or non-spatial) indexes on a set of columns in table.
 
-    Args: executor: sqlalchemy.engine.Connection, must be an autocommit connection (e.g. from
-    autocommit_connection(engine), not engine.begin()): whenever a new index is actually created, this
-    function also runs VACUUM ANALYZE on the table on a second connection, which deadlocks against a lock
-    still held by 'executor' if it isn't autocommit.
-    Argument 'col' may be a str, list of str or list of lists
+    Args:
+      - executor: sqlalchemy.engine.Engine or sqlalchemy.engine.Connection. If a Connection is passed, it
+        must be an autocommit connection (e.g. from autocommit_connection(engine), not engine.begin()): whenever
+        a new index is actually created, this function also runs VACUUM ANALYZE on the table on a second
+        connection, which deadlocks against a lock still held by 'executor' if it isn't autocommit. If an Engine
+        is passed instead, an autocommit connection is checked out from it automatically.
+      - 'col' is the column(s) to index, one of:
+          - a single column name (str): creates one single-column index
+          - a list of column names: creates one single-column index per name
+          - a list of lists of column names: creates one multi-column index per inner list (only supported
+            with method='auto'; GiST does not support multicolumn indexes)
+      - 'method': the type of index to create, either:
+          - 'auto' (default): a regular btree index, suitable for any column type and for multi-column
+            indexes
+          - 'gist': a GiST index using the PostGIS geometry operator class, for a single spatial column;
+            combine with 'srid' to transform the geometry to a given SRID before indexing
+      - 'srid': the spatial reference system ID of the column(s) being indexed. Only relevant with
+        method='gist': the column is wrapped in st_transform(col, srid) before indexing, so the index matches
+        queries that compare geometries in that SRID. It is also appended to the generated index name (e.g.
+        '..._4326_idx') so indexes on the same column in different SRIDs don't collide. Leave as None for
+        non-spatial columns, or when the column is already stored in the SRID that is queried against.
+      - 'max_maintenance_work_mem' may be an int (in KB) or a string with a 'MB' or 'KB' suffix.
     """
-    assert method in (
-        "auto",
-        "gist",
-    ), "Only 'auto' and 'gist' are currently supported as indexing method"
+    if isinstance(executor, Engine):
+        with autocommit_connection(executor) as conn:
+            return create_index(conn, schema, table, col, method, srid, max_maintenance_work_mem)
+
+    if method not in ("auto", "gist"):
+        raise AssertionError("Only 'auto' and 'gist' are currently supported as indexing method")
+
+    if isinstance(max_maintenance_work_mem, str):
+        value = max_maintenance_work_mem.strip().lower()
+        if not (value.endswith("mb") or value.endswith("kb")):
+            msg = f"max_maintenance_work_mem string value must end with 'MB' or 'KB', got '{max_maintenance_work_mem}'."
+            raise AssertionError(msg)
+        try:
+            # Convert string to integer in KB
+            multiplier = 1024 if value.endswith("mb") else 1
+            max_maintenance_work_mem = int(value[:-2].strip()) * multiplier
+        except ValueError:
+            logger.error(f"Could not parse max_maintenance_work_mem value '{max_maintenance_work_mem}' as a number.")
+            raise
 
     cols = [col] if isinstance(col, str) else col  # Ensure that cols is a list
     indexes_existing = [index["name"] for index in get_indexes(executor, schema, table, pk=False)]

@@ -64,7 +64,10 @@ def test_create_index():
 
     with autocommit_connection(db.engine) as conn:
         conn.exec_driver_sql(f"drop table if exists {schema}.{table}")
-        conn.exec_driver_sql(f"create table {schema}.{table} (id integer, col_a integer, col_b integer)")
+        conn.exec_driver_sql(
+            f"create table {schema}.{table} (id integer, col_a integer, col_b integer, col_c integer, "
+            f"col_d integer)"
+        )
 
     try:
         # create_index() on a connection with an open transaction must raise immediately instead of
@@ -80,6 +83,20 @@ def test_create_index():
 
             indexes = [index["name"] for index in get_indexes(connection, schema, table, pk=False)]
             assert "test_create_index_tmp_col_b_idx" in indexes
+
+        # A bare Engine is also accepted directly: create_index() checks out an autocommit connection itself.
+        create_index(db.engine, schema, table, "col_c")
+
+        with autocommit_connection(db.engine) as connection:
+            indexes = [index["name"] for index in get_indexes(connection, schema, table, pk=False)]
+            assert "test_create_index_tmp_col_c_idx" in indexes
+
+        # max_maintenance_work_mem may be passed as a 'MB'/'KB' string instead of a plain int.
+        with autocommit_connection(db.engine) as connection:
+            create_index(connection, schema, table, "col_d", max_maintenance_work_mem="384MB")
+
+            indexes = [index["name"] for index in get_indexes(connection, schema, table, pk=False)]
+            assert "test_create_index_tmp_col_d_idx" in indexes
     finally:
         with autocommit_connection(db.engine) as conn:
             conn.exec_driver_sql(f"drop table if exists {schema}.{table}")

@@ -1,5 +1,8 @@
-### 4.3 <small> Unreleased </small>
+### 4.4 <small> Unreleased </small>
  -
+
+### 4.3 <small> Unreleased </small>
+ - create_index() now also accepts a database engine directly and accepts 'MB'/'KB' string for max_maintenance_work_mem
 
 ### 4.2 <small> 2026-08-05 </small>
  - Fix create_index() occasionally hanging and then failing with a closed-connection error when called on

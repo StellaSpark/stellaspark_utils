@@ -1,5 +1,5 @@
-debugpy==1.8.21        
-pytest==9.1.1         
-pytest-cov==7.1.0     
-python-dotenv==1.2.2  
-requests==2.34.2
+debugpy
+pytest
+pytest-cov
+python-dotenv
+requests

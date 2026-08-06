@@ -74,15 +74,15 @@ cd <project_root>
 docker-compose build stellaspark_utils
 ```
 
-##### Test coverage (release 4.0)
+##### Test coverage (release 4.4)
 ```bash
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
-setup.py                       10     10     0%
-stellaspark_utils/db.py       177    112    37%
-stellaspark_utils/text.py     110     87    21%
+setup.py                        9      9     0%
+stellaspark_utils/db.py       198     84    58%
+stellaspark_utils/text.py     110     82    25%
 -----------------------------------------------
-TOTAL                         297    209    30%
+TOTAL                         317    175    45%
 ```
 
 ### Release 

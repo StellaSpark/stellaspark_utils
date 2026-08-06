@@ -78,7 +78,12 @@ def create_index(
         must be an autocommit connection (e.g. from autocommit_connection(engine), not engine.begin()): whenever
         a new index is actually created, this function also runs VACUUM ANALYZE on the table on a second
         connection, which deadlocks against a lock still held by 'executor' if it isn't autocommit. If an Engine
-        is passed instead, an autocommit connection is checked out from it automatically.
+        is passed instead, an autocommit connection is checked out from it automatically. Example:
+
+            from db import autocommit_connection, create_index
+
+            with autocommit_connection(db.engine) as connection:
+                create_index(connection, schema, table, "column")
       - 'col' is the column(s) to index, one of:
           - a single column name (str): creates one single-column index
           - a list of column names: creates one single-column index per name
@@ -99,6 +104,14 @@ def create_index(
     if isinstance(executor, Engine):
         with autocommit_connection(executor) as conn:
             return create_index(conn, schema, table, col, method, srid, max_maintenance_work_mem)
+
+    assert executor.get_execution_options().get("isolation_level") == "AUTOCOMMIT", (
+        "'executor' is not an autocommit connection, so its VACUUM ANALYZE after creating an index may "
+        "deadlock on a lock it still holds. Use autocommit_connection(engine), not engine.begin(). Example:\n\n"
+        "    from db import autocommit_connection, create_index\n\n"
+        "    with autocommit_connection(db.engine) as connection:\n"
+        "        create_index(connection, schema, table, 'column')"
+    )
 
     if method not in ("auto", "gist"):
         raise AssertionError("Only 'auto' and 'gist' are currently supported as indexing method")
@@ -161,12 +174,6 @@ def create_index(
                 index_created = False
 
     if index_created:
-        assert executor.get_execution_options().get("isolation_level") == "AUTOCOMMIT", (
-            "create_index() created a new index and must now VACUUM ANALYZE on a separate connection, but "
-            "'executor' is not an autocommit connection, so it may still hold a lock (from an open or "
-            "autobegun transaction) that would deadlock against that VACUUM. Pass an executor connection "
-            "from autocommit_connection(engine), not one from engine.begin()."
-        )
         # Vacuum table to update query planner. VACUUM cannot run inside a transaction block, so we check out a
         # second, independent connection from the same pool in AUTOCOMMIT mode.
         with autocommit_connection(executor.engine) as vacuum_connection:

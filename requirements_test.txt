@@ -1,5 +1,5 @@
-debugpy        
-pytest         
-pytest-cov     
-python-dotenv  
+debugpy
+pytest
+pytest-cov
+python-dotenv
 requests

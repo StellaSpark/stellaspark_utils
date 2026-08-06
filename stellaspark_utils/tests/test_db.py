@@ -64,15 +64,19 @@ def test_create_index():
 
     with autocommit_connection(db.engine) as conn:
         conn.exec_driver_sql(f"drop table if exists {schema}.{table}")
-        conn.exec_driver_sql(
-            f"create table {schema}.{table} (id integer, col_a integer, col_b integer, col_c integer, "
-            f"col_d integer)"
-        )
+        sql = f"create table {schema}.{table} (id integer, col_a integer, col_b integer, col_c integer, col_d integer)"
+        conn.exec_driver_sql(sql)
 
     try:
         # create_index() on a connection with an open transaction must raise immediately instead of
         # deadlocking against the VACUUM ANALYZE it runs whenever it actually creates a new index.
         with db.get_connection() as connection:
+            with pytest.raises(AssertionError):
+                create_index(connection, schema, table, "col_a")
+
+        # Same check, but with an isolation level explicitly set to something other than AUTOCOMMIT (rather
+        # than left unset), to exercise the executor.get_execution_options().get("isolation_level") check itself.
+        with db.engine.connect().execution_options(isolation_level="READ COMMITTED") as connection:
             with pytest.raises(AssertionError):
                 create_index(connection, schema, table, "col_a")
 
@@ -97,6 +101,16 @@ def test_create_index():
 
             indexes = [index["name"] for index in get_indexes(connection, schema, table, pk=False)]
             assert "test_create_index_tmp_col_d_idx" in indexes
+
+        # A max_maintenance_work_mem string missing its 'MB'/'KB' suffix is rejected before anything is created.
+        with autocommit_connection(db.engine) as connection:
+            with pytest.raises(AssertionError):
+                create_index(connection, schema, table, "col_e", max_maintenance_work_mem="384")
+
+        # A max_maintenance_work_mem string with a non-numeric value is rejected as well.
+        with autocommit_connection(db.engine) as connection:
+            with pytest.raises(ValueError):
+                create_index(connection, schema, table, "col_e", max_maintenance_work_mem="abcMB")
     finally:
         with autocommit_connection(db.engine) as conn:
             conn.exec_driver_sql(f"drop table if exists {schema}.{table}")

@@ -148,14 +148,14 @@ def create_index(
             index_name = make_identifier(f"{table}_{'_'.join(col_in)}_idx")
 
         if index_name in indexes_existing:
-            logger.info(f"Skip creating index '{index_name}' as it already exists")
+            logger.debug(f"Skip creating index '{index_name}' as it already exists")
         else:
             if max_maintenance_work_mem:
                 assert isinstance(max_maintenance_work_mem, int) and max_maintenance_work_mem > 0
                 # Increase working memory to speed up process. Add the end of this function we reset it to original
                 executor.exec_driver_sql(f"set maintenance_work_mem = '{max_maintenance_work_mem}'")
             try:
-                logger.info(f"Add index to {schema}.{table} for column(s) {','.join(col_in)}")
+                logger.debug(f"Add index to {schema}.{table} for column(s) {','.join(col_in)}")
                 if method == "auto":
                     executor.exec_driver_sql(
                         f"create index {q(index_name)} on {schema}.{q(table)}({','.join(q(col_in))})"

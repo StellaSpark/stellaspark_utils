@@ -74,7 +74,7 @@ cd <project_root>
 docker-compose build stellaspark_utils
 ```
 
-##### Test coverage (release 4.4)
+##### Test coverage (release 4.5)
 ```bash
 Name                        Stmts   Miss  Cover
 -----------------------------------------------
